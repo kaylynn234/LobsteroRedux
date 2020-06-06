@@ -9,6 +9,7 @@ import bigbeans
 import discord
 from typing import MutableMapping
 import uwuify
+import aiohttp
 
 from discord.ext import commands, menus
 from . import menuclasses
@@ -224,6 +225,7 @@ class Lobstero(commands.Bot):
 
     def __init__(self, *args, config: MutableMapping, **kwargs) -> None:
         self.config = config
+        self.session = aiohttp.ClientSession()
         self.logger = logging.getLogger("Lobstero")
         self.first_ready = True
         super().__init__(*args, **kwargs)

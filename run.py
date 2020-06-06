@@ -1,12 +1,13 @@
 import click
 import toml
 
-from redux.models import botclasses
+from extensions.models import botclasses
 from discord.ext import commands
 
 INITIAL_EXTENSIONS = [
     "jishaku",
-    "redux.extensions.database"
+    "extensions.database",
+    "extensions.images"
 ]
 
 
@@ -35,8 +36,8 @@ def run(**kwargs):
             bot.load_extension(extension)
         except commands.ExtensionAlreadyLoaded:
             bot.logger.info("Extension %s already loaded, skipping.", extension)
-        except Exception as error:
-            bot.logger.critical("Could not load extension %s: %s", extension, str(error))
+        # except Exception as error:
+        #     bot.logger.critical("Could not load extension %s: %s", extension, str(error))
         else:
             bot.logger.info("Extension %s loaded successfully.", extension)
 

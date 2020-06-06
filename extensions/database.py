@@ -12,6 +12,7 @@ class Database(commands.Cog):
     async def before_ready(self):
         self.db = self.bot.db  # type: bigbeans.databean.Databean
 
+    # these are all extremely thin wrappers - i'm not sure i want to keep them
     async def inventory_add(self, user_id: int, name: str, description: str, quantity: int, value: int):
         self.db["inventory"].upsert(
             ["user_id", "name", "description, quantity", "value"],
