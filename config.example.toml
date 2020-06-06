@@ -1,0 +1,23 @@
+[token]
+production = "Your production bot token here"
+debug = "Your debug bot token here"
+
+[config]
+owner_id = 123456789012345
+owner_display_name = "Whatever display name you want here"
+default_prefix = "<"
+
+[database]
+server = "localhost"
+port = 5432
+database_name = "postgres"
+username = "postgres"
+password = "..."
+
+[external]
+use_wktmltopdf = true
+wkhtmltopdf_path = "This path is only relevant if you're using windows!"
+use_cat_api = true
+cat_api_key = "Get one at https://thecatapi.com/"
+use_lobstero_api = true
+lobstero_api_address = "This can be self-hosted - see https://github.com/kaylynn234/LobsteroAPI"
