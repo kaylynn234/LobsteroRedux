@@ -2,11 +2,17 @@ import click
 import toml
 
 from redux.models import botclasses
+from discord.ext import commands
+
+INITIAL_EXTENSIONS = [
+    "jishaku",
+    "redux.extensions.database"
+]
 
 
 @click.command()
-@click.option("--debug", is_flag=True, type=bool, help="Runs the bot in debug mode (True or False)")
-@click.option("--config", is_flag=True, type=click.Path(exists=True), help="Uses an alternate path for configuration.")
+@click.option("--production", is_flag=True, type=bool, help="Runs the bot in production mode.")
+@click.option("--config", type=click.Path(exists=True), help="Uses an alternate path for configuration.")
 def run(**kwargs):
     try:
         with open(kwargs.get("config", None) or "config.toml", "r") as tomlfile:
@@ -15,16 +21,26 @@ def run(**kwargs):
         print("Configuration file not found!")
         exit()
 
-    token = config["token"]["debug"] if kwargs.get("debug", None) else config["token"]["production"]
+    token = config["token"]["production"] if kwargs.get("production", None) else config["token"]["debug"]
     bot = botclasses.Lobstero(
-        command_prefix=...,
-        help_command=botclasses.CustomHelpCommand,
+        config=config,
+        command_prefix=config["config"]["default_prefix"],
+        help_command=botclasses.CustomHelpCommand(),
         description="A discord bot for having fun.",
         case_insensitive=True
     )
 
+    for extension in INITIAL_EXTENSIONS:
+        try:
+            bot.load_extension(extension)
+        except commands.ExtensionAlreadyLoaded:
+            bot.logger.info("Extension %s already loaded, skipping.", extension)
+        except Exception as error:
+            bot.logger.critical("Could not load extension %s: %s", extension, str(error))
+        else:
+            bot.logger.info("Extension %s loaded successfully.", extension)
+
     bot.run(token)
 
 
-if __name__ == "__main__":
-    run()
+run()

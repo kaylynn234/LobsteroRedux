@@ -1,17 +1,22 @@
 import random
 import difflib
+import logging
 
 from collections import defaultdict
 from typing import Sequence, Iterator, Optional, KeysView
 
+import bigbeans
 import discord
+from typing import MutableMapping
 import uwuify
 
 from discord.ext import commands, menus
 from . import menuclasses
 
 
-ALIASES = [
+logging.basicConfig(level=logging.INFO)
+
+HELP_ALIASES = [
     "hlep",
     "hpel",
     "pehl",
@@ -43,7 +48,7 @@ class CustomHelpCommand(commands.HelpCommand):
 
     def __init__(self):
         self.not_found = None
-        super().__init__(command_attrs={"aliases": ALIASES})
+        super().__init__(command_attrs={"aliases": HELP_ALIASES})
 
     async def check_and_jumble(self, embed):
         if self.context.invoked_with.lower() in ["halp", "holp", "hilp", "hulp"]:
@@ -72,7 +77,7 @@ class CustomHelpCommand(commands.HelpCommand):
         for command in sequence:
             try:
                 usable = await command.can_run(self.context)
-            except commands.CommandInvokeError:
+            except (commands.CommandInvokeError, commands.CheckFailure):
                 usable = False
 
             if usable:
@@ -155,8 +160,7 @@ class CustomHelpCommand(commands.HelpCommand):
         if to_send:
             await self.context.send(embed=to_send)
         else:
-            await self.context.simple_embed(
-                "You do not have the permissions required to use this module.")
+            await self.context.send("You do not have the permissions required to use this module.")
 
     async def send_bot_help(self, _) -> None:
         embed = discord.Embed(title="Help", color=16202876)
@@ -178,7 +182,7 @@ class CustomHelpCommand(commands.HelpCommand):
 
         pages = menuclasses.HelpMenu([embed] + list(cog_pages))
         menu = menus.MenuPages(pages, timeout=90)
-        await menu.start(self.context, wait=True)
+        await menu.start(self.context)
 
     async def command_not_found(self, string) -> str:
         self.not_found = string  # type: Optional[str]
@@ -192,7 +196,7 @@ class CustomHelpCommand(commands.HelpCommand):
         return r
 
     async def send_error_message(self, error):
-        usable = [c.qualified_name for c in await self.all_usable_commands()]
+        usable = [c.qualified_name for c in await self.usable_commands(self.context.bot.walk_commands())]
         if not self.not_found:
             command_matches = cog_matches = False
         else:
@@ -201,7 +205,7 @@ class CustomHelpCommand(commands.HelpCommand):
             cog_matches = difflib.get_close_matches(self.not_found, usable_cogs)
 
         if not (command_matches or cog_matches):
-            return await self.context.simple_embed(error)
+            return await self.context.send(error)
 
         embed = discord.Embed(title=error, color=16202876)
         lines = []
@@ -218,5 +222,43 @@ class CustomHelpCommand(commands.HelpCommand):
 
 class Lobstero(commands.Bot):
 
+    def __init__(self, *args, config: MutableMapping, **kwargs) -> None:
+        self.config = config
+        self.logger = logging.getLogger("Lobstero")
+        self.first_ready = True
+        super().__init__(*args, **kwargs)
+
+    async def login(self, *args, **kwargs):
+        # we override this and use it as an async pre-ready hook
+        # in this case, we're connecting to the DB now so that it's usable immediately upon ready
+        try:
+            self.db = bigbeans.connect(
+                host=self.config["database"]["server"],
+                port=self.config["database"]["port"],
+                database=self.config["database"]["database_name"],
+                user=self.config["database"]["username"],
+                password=self.config["database"]["password"]
+            )
+        except Exception as error:
+            self.logger.critical("Connection to database failed: %s", str(error))
+        else:
+            self.logger.info("Connection to database established.")
+
+        # dispatch pre-ready event, mainly for extensions to run async setup
+        self.dispatch("before_ready")
+
+        # normal login
+        await super().login(*args, **kwargs)
+
     async def get_context(self, message, *, cls=CustomContext) -> CustomContext:
         return await super().get_context(message, cls=cls)
+
+    async def on_ready(self):
+        self.logger.info("Connection to discord established.")
+
+    async def on_command_error(self, ctx, error):
+        if isinstance(error, (commands.CommandNotFound, discord.Forbidden)):
+            return
+
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send()

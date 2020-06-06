@@ -7,7 +7,10 @@ class Database(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot  # type: commands.Bot
-        self.db = bot.db  # type: bigbeans.databean.Databean
+
+    @commands.Cog.listener("before_ready")
+    async def before_ready(self):
+        self.db = self.bot.db  # type: bigbeans.databean.Databean
 
     async def inventory_add(self, user_id: int, name: str, description: str, quantity: int, value: int):
         self.db["inventory"].upsert(
