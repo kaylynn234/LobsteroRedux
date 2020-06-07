@@ -1,13 +1,13 @@
 import random
 import difflib
 import logging
+import traceback
 
 from collections import defaultdict
-from typing import Sequence, Iterator, Optional, KeysView
+from typing import Sequence, Iterator, Optional, KeysView, MutableMapping
 
 import bigbeans
 import discord
-from typing import MutableMapping
 import uwuify
 import aiohttp
 
@@ -259,9 +259,68 @@ class Lobstero(commands.Bot):
         self.logger.info("Connection to discord established.")
 
     async def on_command_error(self, ctx, error):
-        print(error)
         if isinstance(error, (commands.CommandNotFound, discord.Forbidden)):
             return
 
+        self.logger.warning(
+            "Guild %s (ID %s) Author %s (ID %s) Channel %s (ID %s)\n%s",
+            str(ctx.guild), str(ctx.guild.id) if ctx.guild else "N/A", str(ctx.author), str(ctx.author.id),
+            str(ctx.channel), str(ctx.channel.id) if ctx.channel else "N/A",
+            "".join(traceback.format_exception(type(error), error, error.__traceback__, 4))
+        )
+
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send()
+            await ctx.send(
+                "Missing argument \"{0}\" - try ``{1}help {2}``?".format(
+                    error.param.name, ctx.prefix, ctx.command.qualified_name
+                ), delete_after=10
+            )
+
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(
+                "Bad command usage - try ``{0}help {1}``?".format(
+                    ctx.prefix, ctx.command.qualified_name
+                ), delete_after=10
+            )
+
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(
+                "Too many arguments - try ``{0}help {1}``?".format(
+                    ctx.prefix, ctx.command.qualified_name
+                ), delete_after=10
+            )
+
+        if isinstance(error, commands.BotMissingPermissions):
+            await ctx.send(
+                "I am missing permissions:\n{0}".format(
+                    "``" + "``, ``".join(error.missing_perms) + "``"
+                ), delete_after=10
+            )
+
+        if isinstance(error, commands.MissingPermissions):
+            await ctx.send(
+                "You are missing permissions:\n{0}".format(
+                    "``" + "``, ``".join(error.missing_perms) + "``"
+                ), delete_after=10
+            )
+
+        if isinstance(error, commands.NotOwner):
+            await ctx.send(
+                "<a:dread_alarm:670546197060124673> not owner! <a:dread_alarm:670546197060124673>",
+                delete_after=10
+            )
+
+        if isinstance(error, commands.DisabledCommand):
+            await ctx.send(
+                "<a:dread_alarm:670546197060124673> Command disabled! <a:dread_alarm:670546197060124673>",
+                delete_after=10
+            )
+
+        if isinstance(error, commands.MaxConcurrencyReached):
+            await ctx.send("Command already in use!", delete_after=10)
+
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.send("Command on cooldown - try again in {:.2f}s.".format(error.retry_after), delete_after=10)
+
+        if isinstance(error, OverflowError):
+            await ctx.send("**``Reconsider``**", delete_after=10)
