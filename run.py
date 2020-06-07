@@ -8,7 +8,8 @@ INITIAL_EXTENSIONS = [
     "jishaku",
     "extensions.database",
     "extensions.images",
-    "extensions.bottogames"
+    "extensions.bottogames",
+    "extensions.currency"
 ]
 
 

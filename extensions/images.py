@@ -17,9 +17,9 @@ from discord.ext import commands
 from jishaku.functools import executor_function
 from jishaku.codeblocks import codeblock_converter
 from extensions.external import asciify, kromo, halftone
-from extensions.models.imageclasses import (
+from extensions.models.exceptions import (
     ImageScriptException, MissingBracketsException, MissingSemicolonException, UnknownOperationException,
-    TooMuchToDoException, BadInputException, BadSyntaxException, MissingColonException, BanConglomerate
+    TooMuchToDoException, BadInputException, BadSyntaxException, MissingColonException
 )
 
 
@@ -44,6 +44,43 @@ DOCSTRING_MAPPING = {
     "nom": "Eating is a fun and enjoyable activity.",
 
 }
+
+
+class BanLocation():
+
+    def __init__(self):
+        self.x, self.y = random.randint(1, 512), random.randint(1, 512)
+        self.vectorx, self.vectory = 0, 0
+        self.speed = random.randint(4, 9)
+
+        while self.vectorx == 0 and self.vectory == 0:
+            self.vectorx, self.vectory = random.randint(-1, 1), random.randint(-1, 1)
+
+    def update_frame(self):
+        self.x += (self.vectorx * self.speed)
+        self.y += (self.vectory * self.speed)
+
+
+class BanConglomerate():
+
+    def __init__(self):
+        self.bans = [BanLocation() for _ in range(random.randint(9, 12))]
+        self.frames = 0
+
+    def generate_frame(self, banimg):
+        img = Image.new("RGBA", (640, 640), (54, 57, 63, 255))
+
+        for x in self.bans:
+            img.paste(banimg, (x.x, x.y), banimg)
+            x.update_frame()
+
+        if self.frames == 10:
+            self.bans.append(BanLocation())
+            self.frames = -1
+
+        self.frames += 1
+
+        return img
 
 
 class Cog(commands.Cog, name="Editing"):

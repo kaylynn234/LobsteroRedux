@@ -3,9 +3,14 @@ import random
 from PIL import Image
 
 
-class ImageScriptException(Exception):
-    """The base error for all Imagescript-related errors.
+class LobsteroException(Exception):
+    """The base exception for all lobstero-related errors.
     You should never see this. Hopefully."""
+
+
+class ImageScriptException(Exception):
+    """The base exception for all Imagescript-related errors.
+    this inherits from LobsteroException."""
 
 
 class UnknownOperationException(ImageScriptException):
@@ -69,38 +74,11 @@ class MissingSemicolonException(BadSyntaxException):
     The Imagescript manual has more in-depth information on the basics."""
 
 
-class BanLocation():
+class OnExtendedCooldown(LobsteroException):
+    """An exception raised when something is on an extended cooldown."""
 
-    def __init__(self):
-        self.x, self.y = random.randint(1, 512), random.randint(1, 512)
-        self.vectorx, self.vectory = 0, 0
-        self.speed = random.randint(4, 9)
+    def __init__(self, expires):
+        self.expires = expires
 
-        while self.vectorx == 0 and self.vectory == 0:
-            self.vectorx, self.vectory = random.randint(-1, 1), random.randint(-1, 1)
-
-    def update_frame(self):
-        self.x += (self.vectorx * self.speed)
-        self.y += (self.vectory * self.speed)
-
-
-class BanConglomerate():
-
-    def __init__(self):
-        self.bans = [BanLocation() for _ in range(random.randint(9, 12))]
-        self.frames = 0
-
-    def generate_frame(self, banimg):
-        img = Image.new("RGBA", (640, 640), (54, 57, 63, 255))
-
-        for x in self.bans:
-            img.paste(banimg, (x.x, x.y), banimg)
-            x.update_frame()
-
-        if self.frames == 10:
-            self.bans.append(BanLocation())
-            self.frames = -1
-
-        self.frames += 1
-
-        return img
+    def __str__(self) -> str:
+        return self.expires.diff_for_humans()

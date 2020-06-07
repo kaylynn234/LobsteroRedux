@@ -12,7 +12,7 @@ import uwuify
 import aiohttp
 
 from discord.ext import commands, menus
-from . import menuclasses
+from . import menuclasses, exceptions
 
 
 logging.basicConfig(level=logging.INFO)
@@ -234,7 +234,7 @@ class Lobstero(commands.Bot):
         # we override this and use it as an async pre-ready hook
         # in this case, we're connecting to the DB now so that it's usable immediately upon ready
         try:
-            self.db = bigbeans.connect(
+            self.db = await bigbeans.connect(
                 host=self.config["database"]["server"],
                 port=self.config["database"]["port"],
                 database=self.config["database"]["database_name"],
@@ -246,8 +246,17 @@ class Lobstero(commands.Bot):
         else:
             self.logger.info("Connection to database established.")
 
-        # dispatch pre-ready event, mainly for extensions to run async setup
-        self.dispatch("before_ready")
+        for cog in self.cogs.values():
+            func = getattr(cog, "before_ready", None)
+            if func:
+                try:
+                    await func()
+                except Exception as error:
+                    self.logger.critical("Error while trying to ready cog %s: %s", cog.qualified_name, str(error))
+                else:
+                    self.logger.info("Cog %s is ready!", cog.qualified_name)
+            else:
+                self.logger.info("Cog %s has no before_ready function, skipping.", cog.qualified_name)
 
         # normal login
         await super().login(*args, **kwargs)
@@ -259,6 +268,8 @@ class Lobstero(commands.Bot):
         self.logger.info("Connection to discord established.")
 
     async def on_command_error(self, ctx, error):
+        error = getattr(error, "original", error)  # just in case bb
+
         if isinstance(error, (commands.CommandNotFound, discord.Forbidden)):
             return
 
@@ -324,3 +335,6 @@ class Lobstero(commands.Bot):
 
         if isinstance(error, OverflowError):
             await ctx.send("**``Reconsider``**", delete_after=10)
+
+        if isinstance(error, exceptions.OnExtendedCooldown):
+            await ctx.send("⏰ You're on cooldown! You can do this again {}!".format(str(error)), delete_after=10)
