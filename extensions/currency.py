@@ -57,7 +57,7 @@ BONUS_OUTCOMES.update(temp)
 COIN = "<:crabcoin:719040455886766358>"
 
 
-class Currency(commands.Cog):
+class Currency(commands.Cog, name="Currency & Items"):
 
     def __init__(self, bot):
         self.bot = bot  # type: commands.Bot
@@ -72,13 +72,33 @@ class Currency(commands.Cog):
     async def before_ready(self):
         self.db = self.bot.db  # type: bigbeans.databean.Databean
 
+    @commands.command(aliases=["$"])
+    async def balance(self, ctx, *, who: discord.Member = None):
+        """Display the balance of you or another user."""
+
+        who = who or ctx.author
+        currency = await self.db["currency"].find_one(user_id=who.id)
+        amount_owned = currency["amount"] if currency else 0
+        embed = discord.Embed(title="Currency", color=16202876)
+        embed.set_author(name=str(who), icon_url=who.avatar_url)
+        if ctx.author.id == who.id:
+            embed.description = f"{who.name.capitalize()} has {amount_owned} {COIN}"
+        else:
+            embed.description = f"You have {amount_owned} {COIN}"
+
+        embed.set_thumbnail(
+            url="https://cdn.discordapp.com/attachments/644479051918082050/719149475909730354/3dgifmaker92.gif"
+        )
+
+        await ctx.send(embed=embed)
+
+
     @commands.command()
     async def daily(self, ctx, *, disposition: str):
         """Choose between the forces of light and dark for a chance to earn an extremely high amount of currency.
         Three Fates will be chosen randomly, and if they match the disposition you choose, you will earn a large amount more money.
         Certain combinations of fates will also yield bonus currency.
-        Ultimately, the Fates are up to chance. EMbrace them.
-        """
+        Ultimately, the Fates are up to chance. Embrace them."""
 
         if not disposition.lower() in VALID_DISPOSITION_MAPPING:
             raise commands.BadArgument
@@ -115,7 +135,9 @@ class Currency(commands.Cog):
 
         embed = discord.Embed(title="You hold your breath and pray...", description=message, color=16202876)
         embed.add_field(name="Final results", value=f"{resulting_value} {COIN}", inline=False)
+        embed.set_author(name=ctx.author.name, url=ctx.author.avatar_url)
         embed.set_footer(text="You can play again tomorrow.")
+
         await self.add_currency(ctx.author.id, resulting_value)
         await ctx.cogs["Database"].cooldown_set(ctx.author.id, "daily")
         await ctx.send(embed=embed)
