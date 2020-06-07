@@ -201,7 +201,7 @@ class MaizeGame(menus.Menu):
         offset = OFFSET_MAPPING[direction]
         tile = self.maze.get_point(botto_x + offset[0], botto_y + offset[1]) or "⬛"
 
-        if "botto" in str(tile) or "maize_maize" in str(tile):
+        if "botto" in str(tile) or "🌽" in str(tile):
             self.tries -= 1
 
             if self.tries > 0:
