@@ -7,7 +7,8 @@ from discord.ext import commands
 INITIAL_EXTENSIONS = [
     "jishaku",
     "extensions.database",
-    "extensions.images"
+    "extensions.images",
+    "extensions.bottogames"
 ]
 
 

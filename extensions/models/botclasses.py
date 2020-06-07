@@ -259,6 +259,7 @@ class Lobstero(commands.Bot):
         self.logger.info("Connection to discord established.")
 
     async def on_command_error(self, ctx, error):
+        print(error)
         if isinstance(error, (commands.CommandNotFound, discord.Forbidden)):
             return
 
