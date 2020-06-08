@@ -3,6 +3,7 @@ import random
 import sys
 import io
 import time
+import functools
 
 import numpy
 import discord
@@ -14,7 +15,6 @@ from io import BytesIO
 from urllib.parse import urlsplit
 from PIL import ImageFilter, ImageFont, Image, ImageDraw, ImageEnhance, ImageOps
 from discord.ext import commands
-from jishaku.functools import executor_function
 from jishaku.codeblocks import codeblock_converter
 from extensions.external import asciify, kromo, halftone
 from extensions.models.exceptions import (
@@ -96,6 +96,14 @@ If you don't do any of that, Lobstero will search the previous few messages for 
     def __init__(self, bot):
         self.bot = bot
         self.session = bot.session
+
+    async def wrap(self, func, *args, **kwargs):
+        """Wraps a sync function into a threadpool'd asynchronous executor."""
+
+        func = functools.partial(func, *args, **kwargs)
+        output = await self.bot.loop.run_in_executor(self.bot._pool, func)
+
+        return output
 
     def iter_attachments(self, items):
         current = []
@@ -244,7 +252,7 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         # ugly, will fix later
         try:
-            processed = list(await to_do(result))
+            processed = list(await self.wrap(to_do(result)))
         except ImageScriptException as e:
             return await ctx.send(str(e))
 
@@ -310,7 +318,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
                 time_taken = f"Completed {len(cleaned_chunks)} operation(s) in {round(completion - start, 2)} seconds."
                 await self.save_and_send(ctx, processed[0], processed[1], elapsed=time_taken, **processed[2])
 
-    @executor_function
     def image_do_blur(self, result, amount=10):
         myimage = Image.open(result.data)
         im = myimage.convert("RGBA")
@@ -318,7 +325,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return output, "blur.png"
 
-    @executor_function
     def image_do_gay(self, result):
         simage = Image.open(result.data)
         gim = Image.open(f"{ROOT_DIRECTORY}extensions/data/flag.jpg").convert("RGBA")
@@ -330,7 +336,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return output, "gay.png"
 
-    @executor_function
     def image_do_fry(self, result, amount=2):
         simage = Image.open(result.data)
         im = simage.convert("RGBA")
@@ -338,7 +343,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return output, "fry.png"
 
-    @executor_function
     def image_do_nom(self, result):
         d_im = Image.open(result.data).convert("RGBA")
 
@@ -358,7 +362,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return c_owobase, "nom.png"
 
-    @executor_function
     def image_do_bless(self, result):
         im = Image.open(result.data).convert("RGBA")
         c_im = im.resize((1024, 1024), PIL.Image.ANTIALIAS)
@@ -368,7 +371,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return c_im, "bless.png"
 
-    @executor_function
     def image_do_asciify(self, result):
         opened = Image.open(result.data).convert("RGBA")
         colorlist = [
@@ -382,7 +384,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return asciified, "ascii.png"
 
-    @executor_function
     def image_do_xokify(self, result):
         im = Image.open(result.data).convert("RGBA")
         c_im = im.resize((1024, 1024), PIL.Image.ANTIALIAS)
@@ -397,14 +398,12 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return masked, "xok.png"
 
-    @executor_function
     def image_do_jpeg(self, result, quality=1):
         d_im = Image.open(result.data).convert("CMYK")
         d_im.thumbnail((200, 200))
 
         return d_im, "jpegify.jpeg", {"quality": quality}
 
-    @executor_function
     def image_do_chromatic(self, result, strength=2):
         d_im = Image.open(result.data).convert("RGB")
         d_im.thumbnail((1024, 1024))
@@ -419,7 +418,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return final_im, "chromatic.png"
 
-    @executor_function
     def image_do_halftone(self, result):
         im = Image.open(result.data)
         h = halftone.Halftone()
@@ -435,7 +433,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return str(num)
 
-    @executor_function
     def package_wheel(self, wheel, degrees, ban, ban_mask, banhandler):
         whl = wheel.rotate(degrees)
         whl.paste(ban, None, ban)
@@ -451,7 +448,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return img.resize((basewidth, hsize), method)
 
-    @executor_function
     def image_do_mosaic(self, result):
         d_im = Image.open(result.data).convert("RGBA")
         base = self.smooth_resize(d_im, 100, Image.NEAREST)
@@ -469,7 +465,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return output, "mosaic.png"
 
-    @executor_function
     def image_do_quilt(self, result, squares="random"):
         im = Image.open(result.data).convert("RGBA")
         im.thumbnail((4000, 4000))
@@ -546,7 +541,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return img
 
-    @executor_function
     def image_do_triangulate(self, result):
         im = Image.open(result.data).convert("RGBA")
         if im.size[0] < 20 or im.size[1] < 20:
@@ -585,7 +579,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
         output = canvas.rotate(-90).transpose(Image.FLIP_LEFT_RIGHT)
         return output, "triangulate.png"
 
-    @executor_function
     def image_do_stringify(self, result, invert=False):
         im = Image.open(result.data).convert("L")
         if im.size[0] < 50 or im.size[1] < 50:
@@ -627,7 +620,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return canvas, "stringify.png"
 
-    @executor_function
     def image_do_colortrast(self, result, invert=False):
         im = Image.open(result.data).convert("L")
         if invert:
@@ -637,7 +629,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return output, "colortrast.png"
 
-    @executor_function
     def image_do_glitch(self, result, max_times=40):
         im = Image.open(result.data).convert("RGB")
         for _ in range(random.randint(20, max_times)):
@@ -650,7 +641,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return im, "glitch.png"
 
-    @executor_function
     def image_do_tunnelvision(self, result):
         im = Image.open(result.data).convert("RGB")
         for i, _ in enumerate(range(random.randint(30, 60))):
@@ -724,15 +714,15 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         for _ in range(random.randint(25, 170)):
             degrees += to_spin
-            frames.append(await self.package_wheel(wheel, degrees, ban, ban_mask, banhandler))
+            frames.append(await self.wrap(self.package_wheel, wheel, degrees, ban, ban_mask, banhandler))
 
         for _ in range(70):
             to_spin = to_spin * 0.95
             degrees += to_spin
-            frames.append(await self.package_wheel(wheel, degrees, ban, ban_mask, banhandler))
+            frames.append(await self.wrap(self.package_wheel, wheel, degrees, ban, ban_mask, banhandler))
 
         for _ in range(20):
-            frames.append(await self.package_wheel(wheel, degrees, ban, ban_mask, banhandler))
+            frames.append(await self.wrap(self.package_wheel, wheel, degrees, ban, ban_mask, banhandler))
 
         await self.save_and_send(
             ctx, frames[0], "wheelofban.gif", save_all=True,

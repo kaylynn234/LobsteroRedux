@@ -27,8 +27,7 @@ async def admin(self, ctx: commands.Context):
     summary = [
         f"• Based on Jishaku v{__version__}, running discord.py `{package_version('discord.py')}`.",
         f"• `Python {sys.version}` on `{sys.platform}`.".replace("\n", ""),
-        f"• Module loaded {humanize.naturaltime(self.load_time)}.",
-        f"• Cog loaded {humanize.naturaltime(self.start_time)}.",
+        f"• Bot started {self.bot._start_time.diff_for_humans()}.",
     ]
 
     try:
@@ -37,16 +36,15 @@ async def admin(self, ctx: commands.Context):
         with proc.oneshot():
             mem = proc.memory_full_info()
             summary.append(
-                f"• {humanize.naturalsize(mem.rss)} physical memory."
-                f"• {humanize.naturalsize(mem.vms)} virtual memory."
-                f"• {humanize.naturalsize(mem.uss)} unique."
+                f"• {humanize.naturalsize(mem.rss)}; "
+                f"{humanize.naturalsize(mem.vms)}; "
+                f"{humanize.naturalsize(mem.uss)} (physical, virtual, unique)"
             )
 
             name = proc.name()
             pid = proc.pid
             thread_count = proc.num_threads()
             summary.append(f"• Running on PID {pid} (`{name}`) with {thread_count} thread(s).")
-            summary.append("")  # blank line
     except Exception:  # no psutil, no perms, whatever
         pass
 

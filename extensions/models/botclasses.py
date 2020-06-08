@@ -230,14 +230,18 @@ class Lobstero(commands.Bot):
         self.first_ready = True
         super().__init__(*args, **kwargs)
 
+    def _unwrapped_markov(self) -> str:
+        result = ""
+        for _ in range(random.randint(1, 6)):
+            result += f"{self._markov_model.make_short_sentence(140)} "
+
+        return result
+
     async def markov(self, ctx) -> str:
         if self._markov_model is None:
             return "Markov is not configured ."
         else:
-            result = ""
-            for _ in range(random.randint(1, 6)):
-                result += f"{await self.loop.run_in_executor(None, self._markov_model.make_short_sentence, 140)} "
-
+            result = f"{await self.loop.run_in_executor(self._pool, self._unwrapped_markov)} "
             result = re.sub("<@(!?)([0-9]*)>", ctx.author.mention, result)
             if ctx.guild:
                 result = re.sub("<#([0-9]*)>", lambda _: random.choice(ctx.guild.channels).mention, result)

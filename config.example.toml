@@ -25,3 +25,7 @@ use_cat_api = true
 cat_api_key = "Get one at https://thecatapi.com/"
 use_lobstero_api = true
 lobstero_api_address = "This can be self-hosted - see https://github.com/kaylynn234/LobsteroAPI"
+
+[advanced]
+override_max_workers = false
+max_workers = 10

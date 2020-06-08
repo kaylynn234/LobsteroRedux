@@ -1,5 +1,8 @@
 import os
 
+from concurrent.futures import ThreadPoolExecutor
+
+import pendulum
 import click
 import toml
 import markovify
@@ -36,6 +39,12 @@ def run(**kwargs):
         case_insensitive=True
     )
 
+    bot._start_time = pendulum.now()
+    if config["advanced"]["override_max_workers"]:
+        bot._pool = ThreadPoolExecutor(max_workers=config["advanced"]["max_workers"])
+    else:
+        bot._pool = ThreadPoolExecutor(max_workers=10)
+
     for extension in INITIAL_EXTENSIONS:
         try:
             bot.load_extension(extension)
@@ -66,7 +75,6 @@ def run(**kwargs):
                 f.write(bot._markov_model.to_json())
 
             bot.logger.info("Saved generated model for future usage.")
-
     else:
         bot._markov_model = None
 
