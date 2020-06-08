@@ -1,8 +1,3 @@
-import random
-
-from PIL import Image
-
-
 class LobsteroException(Exception):
     """The base exception for all lobstero-related errors.
     You should never see this. Hopefully."""

@@ -181,7 +181,7 @@ class CustomHelpCommand(commands.HelpCommand):
         embed.description = "\n".join(description)
         embed = await self.check_and_jumble(embed)
 
-        pages = menuclasses.HelpMenu([embed] + list(cog_pages))
+        pages = menuclasses.EmbedPageMenu([embed] + list(cog_pages), menuclasses.title_page_number_formatter("Help"))
         menu = menus.MenuPages(pages, timeout=90)
         await menu.start(self.context)
 

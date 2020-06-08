@@ -5,7 +5,7 @@ from extensions.models import botclasses
 from discord.ext import commands
 
 INITIAL_EXTENSIONS = [
-    "jishaku",
+    "extensions.admin",
     "extensions.database",
     "extensions.images",
     "extensions.bottogames",

@@ -166,6 +166,7 @@ class MaizeGame(menus.Menu):
     async def send_initial_message(self, ctx, channel):
         """Sends the message that becomes the host for a maize maze game"""
         mazebed = discord.Embed(title="Maize maze!", description=self.format_description(), color=16202876)
+        mazebed.set_author(name=self.ctx.author.name, icon_url=self.ctx.author.avatar_url)
         return await ctx.send(embed=mazebed)
 
     @menus.button("\N{BLACK SQUARE FOR STOP}\ufe0f")
@@ -173,6 +174,7 @@ class MaizeGame(menus.Menu):
         """Stops the game."""
         mazetext = self.format_description("Botto is dead and you are entirely responsible.", "Know this. Feel guilt. It was your unwilling that killed him.", False, False)
         mazebed = discord.Embed(title="Maize maze!", description=mazetext, color=16202876)
+        mazebed.set_author(name=self.ctx.author.name, icon_url=self.ctx.author.avatar_url)
         await self.message.edit(embed=mazebed)
 
         self.stop()
@@ -190,6 +192,7 @@ class MaizeGame(menus.Menu):
             )
 
             mazebed = discord.Embed(title="Maize maze!", description=mazetext, color=16202876)
+            mazebed.set_author(name=self.ctx.author.name, icon_url=self.ctx.author.avatar_url)
             await self.message.edit(embed=mazebed)
 
             return False
@@ -211,6 +214,7 @@ class MaizeGame(menus.Menu):
                 )
 
                 mazebed = discord.Embed(title="Maize maze!", description=mazetext, color=16202876)
+                mazebed.set_author(name=self.ctx.author.name, icon_url=self.ctx.author.avatar_url)
                 await self.message.edit(embed=mazebed)
             else:
                 mazetext = self.format_description(
@@ -220,6 +224,7 @@ class MaizeGame(menus.Menu):
                 )
 
                 mazebed = discord.Embed(title="Maize maze!", description=mazetext, color=16202876)
+                mazebed.set_author(name=self.ctx.author.name, icon_url=self.ctx.author.avatar_url)
                 await self.message.edit(embed=mazebed)
                 self.stop()
                 del self
@@ -231,6 +236,7 @@ class MaizeGame(menus.Menu):
                 title="Maize maze!",
                 description=self.format_description("The game of Maize Maze continues."), color=16202876)
 
+            mazebed.set_author(name=self.ctx.author.name, icon_url=self.ctx.author.avatar_url)
             await self.message.edit(embed=mazebed)
 
             if "deat" in str(tile):
@@ -243,6 +249,7 @@ class MaizeGame(menus.Menu):
                 )
 
                 mazebed = discord.Embed(title="Maize maze!", description=mazetext, color=16202876)
+                mazebed.set_author(name=self.ctx.author.name, icon_url=self.ctx.author.avatar_url)
                 await self.message.edit(embed=mazebed)
                 self.stop()
                 del self
@@ -257,6 +264,7 @@ class MaizeGame(menus.Menu):
                 )
 
                 mazebed = discord.Embed(title="Maize maze!", description=mazetext, color=16202876)
+                mazebed.set_author(name=self.ctx.author.name, icon_url=self.ctx.author.avatar_url)
                 await self.message.edit(embed=mazebed)
                 self.stop()
                 del self

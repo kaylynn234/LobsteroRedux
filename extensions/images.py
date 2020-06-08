@@ -218,6 +218,7 @@ If you don't do any of that, Lobstero will search the previous few messages for 
         embed = discord.Embed(color=16202876)
         embed.set_image(url=f"attachment://{name}")
         embed.description = elapsed
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
 
         await ctx.send(file=constructed_file, embed=embed)
 
