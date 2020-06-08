@@ -116,7 +116,7 @@ GENERIC_ITEM_MAPPING = {
         "value": 3,
         "description": (
             "A red apple of a modest size. It looks both juicy and quite nutritious. It would be worth keeping "
-            "around so that you have something to eat, but a merchant would probably be happy to buy them."
+            "around so that you have something to eat, but a merchant would probably be happy to buy one or two."
         )
     },
 }

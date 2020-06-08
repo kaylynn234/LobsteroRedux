@@ -137,7 +137,7 @@ class CustomHelpCommand(commands.HelpCommand):
         if command.aliases:
             embed.add_field(
                 name=f"{len(command.aliases)} alias(es):",
-                value=f"``{', '.join([command.aliases])}``"
+                value=f"``{', '.join(command.aliases)}``"
             )
 
         cooldown = getattr(command._buckets._cooldown, 'per', None)
@@ -232,12 +232,20 @@ class Lobstero(commands.Bot):
 
     async def markov(self, ctx) -> str:
         if self._markov_model is None:
-            return "Markov is not configured or is still generating!"
+            return "Markov is not configured ."
         else:
-            result = await self.loop.run_in_executor(None, self._markov_model.make_sentence)  # type: str
+            result = ""
+            for _ in range(random.randint(1, 6)):
+                result += f"{await self.loop.run_in_executor(None, self._markov_model.make_short_sentence, 140)} "
+
             result = re.sub("<@(!?)([0-9]*)>", ctx.author.mention, result)
             if ctx.guild:
                 result = re.sub("<#([0-9]*)>", lambda _: random.choice(ctx.guild.channels).mention, result)
+
+            result = re.sub(
+                "<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>",
+                lambda _: str(random.choice(self.emojis)), result
+            )
 
             return result
 

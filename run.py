@@ -58,7 +58,7 @@ def run(**kwargs):
             # no frozen model, generate
             bot.logger.info("Generating markov model! This may take a while.")
             with open(config["markov"]["filepath"], "r", encoding="utf-8", errors="ignore") as f:
-                bot._markov_model = markovify.NewlineText(f, retain_original=False, state_size=4)
+                bot._markov_model = markovify.NewlineText(f, retain_original=False, state_size=2)
 
             bot._markov_model.compile(inplace=True)
             bot.logger.info("Model generated.")
