@@ -2,6 +2,7 @@ import random
 import difflib
 import logging
 import traceback
+import re
 
 from collections import defaultdict
 from typing import Sequence, Iterator, Optional, KeysView, MutableMapping
@@ -13,7 +14,6 @@ import aiohttp
 
 from discord.ext import commands, menus
 from . import menuclasses, exceptions
-
 
 logging.basicConfig(level=logging.INFO)
 
@@ -230,6 +230,17 @@ class Lobstero(commands.Bot):
         self.first_ready = True
         super().__init__(*args, **kwargs)
 
+    async def markov(self, ctx) -> str:
+        if self._markov_model is None:
+            return "Markov is not configured or is still generating!"
+        else:
+            result = await self.loop.run_in_executor(None, self._markov_model.make_sentence)  # type: str
+            result = re.sub("<@(!?)([0-9]*)>", ctx.author.mention, result)
+            if ctx.guild:
+                result = re.sub("<#([0-9]*)>", lambda _: random.choice(ctx.guild.channels).mention, result)
+
+            return result
+
     async def login(self, *args, **kwargs):
         # we override this and use it as an async pre-ready hook
         # in this case, we're connecting to the DB now so that it's usable immediately upon ready
@@ -266,6 +277,20 @@ class Lobstero(commands.Bot):
 
     async def on_ready(self):
         self.logger.info("Connection to discord established.")
+
+    async def on_message(self, message):
+        # implement channel blocking here; until then
+        if message.author.bot:
+            return
+
+        ctx = await self.get_context(message)
+        if f"<@{self.user.id}>" in message.content or f"<@!{self.user.id}>" in message.content:
+            try:
+                await message.channel.send(await self.markov(ctx))
+            except discord.Forbidden:
+                pass  # too bad
+
+        await self.invoke(ctx)
 
     async def on_command_error(self, ctx, error):
         error = getattr(error, "original", error)  # just in case bb

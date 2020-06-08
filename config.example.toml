@@ -7,6 +7,10 @@ owner_id = 123456789012345
 owner_display_name = "Whatever display name you want here"
 default_prefix = "<"
 
+[markov]
+use_markov = true
+filepath = "This should be a path to the text file to use for markov"
+
 [database]
 server = "localhost"
 port = 5432

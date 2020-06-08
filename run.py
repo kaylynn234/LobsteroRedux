@@ -1,5 +1,8 @@
+import os
+
 import click
 import toml
+import markovify
 
 from extensions.models import botclasses
 from discord.ext import commands
@@ -42,6 +45,30 @@ def run(**kwargs):
         #     bot.logger.critical("Could not load extension %s: %s", extension, str(error))
         else:
             bot.logger.info("Extension %s loaded successfully.", extension)
+
+    if config["markov"]["use_markov"]:
+        # check if we have a frozen model available
+        if os.path.isfile(config["markov"]["filepath"] + ".generated"):
+            bot.logger.info("Pre-generated model found! Loading...")
+            with open(config["markov"]["filepath"] + ".generated", "r", encoding="utf-8", errors="ignore") as f:
+                bot._markov_model = markovify.NewlineText.from_json(f.read())
+
+            bot.logger.info("Model loaded.")
+        else:
+            # no frozen model, generate
+            bot.logger.info("Generating markov model! This may take a while.")
+            with open(config["markov"]["filepath"], "r", encoding="utf-8", errors="ignore") as f:
+                bot._markov_model = markovify.NewlineText(f, retain_original=False, state_size=4)
+
+            bot._markov_model.compile(inplace=True)
+            bot.logger.info("Model generated.")
+            with open(config["markov"]["filepath"] + ".generated", "w+", encoding="utf-8", errors="ignore") as f:
+                f.write(bot._markov_model.to_json())
+
+            bot.logger.info("Saved generated model for future usage.")
+
+    else:
+        bot._markov_model = None
 
     bot.run(token)
 

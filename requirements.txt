@@ -3,5 +3,6 @@ uwuify==1.0.1
 toml==0.10.0
 click==7.0
 pendulum==2.1.0
+markovify==0.8.0
 git+https://github.com/Rapptz/discord-ext-menus
 git+https://github.com/kaylynn234/bigbeans

@@ -1,3 +1,5 @@
 .vscode/settings.json
 *.pyc
 config.toml
+markov.txt
+*.generated
