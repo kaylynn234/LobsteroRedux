@@ -1,9 +1,13 @@
 import collections
+
 import random
 
 from collections import defaultdict
+from enum import Enum
+
 
 import discord
+import toml
 import bigbeans
 import pendulum
 
@@ -57,75 +61,36 @@ BONUS_OUTCOMES.update(temp)
 
 COIN = "<:crabcoin:719040455886766358>"
 
-DAYLIGHT_STEPS = collections.deque(["🌚", "🌑", "🌑", "☀️", "☀️", "☀️", "🌞", "☀️", "☀️", "☀️", "🌑", "🌑", "🌚"])
+# there are more efficient ways to do this but i'm too tired to care
+DAYLIGHT_STEPS = collections.deque([
+    "🌑", "🌑", "🌑", "🌑", "🌑", "🌑",
+    "☀️", "☀️", "☀️", "☀️", "☀️", "☀️",
+    "☀️", "☀️", "☀️", "☀️", "☀️", "☀️",
+    "☀️", "🌑", "🌑", "🌑", "🌑", "🌑"
+])
 
-# should i move this to toml?
-GENERIC_ITEM_MAPPING = {
-    "twig": {
-        "value": 1,
-        "description": (
-            "A small innocent-looking twig. It's not worth much on its own, but there's a chance it could be useful "
-            "when combined with something else. Maybe it could be used to light a fire?"
-        )
-    },
-    "pebble": {
-        "value": 1,
-        "description": (
-            "A relatively generic pebble. It looks like a perfect skipping stone, but merchants typically "
-            "don't buy stones just to throw them, so it'll be a hard sell. It'd be worth more if you did "
-            "something with it. "
-        )
-    },
-    "blade of grass": {
-        "value": 1,
-        "description": (
-            "A very green blade of grass fetched from the ground beneath you. Since grass is abundant, it's worth "
-            "very little, but it seems springy enough to make some primitive string or bindings."
-        )
-    },
-    "branch": {
-        "value": 3,
-        "description": (
-            "A fallen branch from a nearby tree. It's much larger than a twig, and could be fashioned into a sturdy "
-            "handle or rod with the right tools. You could potentially carve it into some kind of weapon."
-        )
-    },
-    "rock": {
-        "value": 3,
-        "description": (
-            "A round-ish rock with both a flat and rough side. It's too heavy for you to pick up, but you can roll "
-            "it around to take it with you. If you were to prop it up somewhere it would be a useful (albeit "
-            "primitive) workbench."
-        )
-    },
-    "primitive workbench": {
-        "value": 5,
-        "description": (
-            "A large rock propped up on a pile of pebbles. The rough side can be used to sharpen or sand "
-            "any number of things, while the flat side can be used as a table of sorts."
-        )
-    },
-    "berry": {
-        "value": 2,
-        "description": (
-            "A small round berry. It looks quite ripe, and hopefully it isn't poisonous. Since it's a form of "
-            "nutrition, it would be worth keeping around in the event that you need a snack."
-        )
-    },
-    "apple": {
-        "value": 3,
-        "description": (
-            "A red apple of a modest size. It looks both juicy and quite nutritious. It would be worth keeping "
-            "around so that you have something to eat, but a merchant would probably be happy to buy one or two."
-        )
-    },
-}
+with open("extensions/items.toml") as tomlfile:
+    GENERIC_ITEM_MAPPING = toml.load(tomlfile)
+
+
+class ActionOutcome(Enum):
+    NORMAL = 1
+    ATTACKED = 2
+    VICTORIOUS = 3
 
 
 class Currency(commands.Cog, name="Currency & Items"):
 
     def __init__(self, bot):
         self.bot = bot  # type: commands.Bot
+
+    def calculate_time_details(self, current_time):
+        emoji_time_display = DAYLIGHT_STEPS.copy()
+        emoji_time_display.rotate(-int((current_time / 1440) * 24))
+        fuck_pendulum = pendulum.now().start_of("day").add(minutes=current_time)
+        time_printable = fuck_pendulum.strftime("%I:%M %p")
+
+        return emoji_time_display, time_printable
 
     async def add_currency(self, user_id: int, amount: int):
         current = await self.db["currency"].find_one(user_id=user_id)
@@ -141,16 +106,20 @@ class Currency(commands.Cog, name="Currency & Items"):
     async def balance(self, ctx, *, who: discord.Member = None):
         """Display the balance of you or another user."""
 
+        # get user, amount and then build embed
         who = who or ctx.author
         currency = await self.db["currency"].find_one(user_id=who.id)
         amount_owned = currency["amount"] if currency else 0
         embed = discord.Embed(title="Currency", color=16202876)
         embed.set_author(name=str(who), icon_url=who.avatar_url)
+
+        # choose phrasing
         if ctx.author.id == who.id:
             embed.description = f"You have {amount_owned} {COIN}"
         else:
             embed.description = f"{who.name.capitalize()} has {amount_owned} {COIN}"
 
+        # embed felt too empty otherwise
         embed.set_thumbnail(
             url="https://cdn.discordapp.com/attachments/644479051918082050/719149475909730354/3dgifmaker92.gif"
         )
@@ -167,10 +136,12 @@ class Currency(commands.Cog, name="Currency & Items"):
         if not disposition.lower() in VALID_DISPOSITION_MAPPING:
             raise commands.BadArgument
 
+        # query the cooldown, error if they can't play
         cooldown = await ctx.cogs["Database"].cooldown_query(ctx.author.id, "daily", pendulum.Duration(hours=13))
         if cooldown:
             raise exceptions.OnExtendedCooldown(cooldown)
 
+        # choose us some outcomes
         results = [
             random.choice(random.shuffle(MOON_OUTCOMES) or MOON_OUTCOMES),
             random.choice(random.shuffle(MOON_OUTCOMES) or MOON_OUTCOMES),
@@ -185,6 +156,7 @@ class Currency(commands.Cog, name="Currency & Items"):
         else:
             base_value = 40 + sum((item["id"] * 12 for item in results))
 
+        # decide monetary output and build embed message
         id_sequence, disposition_sequence = [item["id"] for item in results], [item["negative"] for item in results]
         bonus_data = BONUS_OUTCOMES[(tuple(id_sequence), tuple(disposition_sequence))]
         disposition_bonus = 4 if disposition_matching else .3
@@ -197,11 +169,13 @@ class Currency(commands.Cog, name="Currency & Items"):
             f"Bonus: {bonus_data['value_increase'] * 100}% - *{bonus_data['message']}*"
         )
 
+        # build embed
         embed = discord.Embed(title="You hold your breath and pray...", description=message, color=16202876)
         embed.add_field(name="Final results", value=f"{resulting_value} {COIN}", inline=False)
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
         embed.set_footer(text="You can play again tomorrow.")
 
+        # give them their money and send
         await self.add_currency(ctx.author.id, resulting_value)
         await ctx.cogs["Database"].cooldown_set(ctx.author.id, "daily")
         await ctx.send(embed=embed)
@@ -210,6 +184,7 @@ class Currency(commands.Cog, name="Currency & Items"):
     async def inventory(self, ctx):
         """Displays your inventory."""
 
+        # fetch items; if they don't have any, don't bother
         results = await self.db["inventory"].find(user_id=ctx.author.id)
         if not results:
             await ctx.send("You don't have any items!")
@@ -222,6 +197,7 @@ class Currency(commands.Cog, name="Currency & Items"):
                     description=data["description"] or "(No extended description)", color=16202876
                 )
 
+                # build embed content
                 embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
                 embed.add_field(
                     name="Quantity",
@@ -233,60 +209,136 @@ class Currency(commands.Cog, name="Currency & Items"):
 
                 embeds.append(embed)
 
+            # start menu
             pages = menuclasses.EmbedPageMenu(embeds)
             menu = menus.MenuPages(pages, timeout=90)
             await menu.start(ctx)
 
     @inventory.command(name="list")
     async def inventory_list(self, ctx):
+        """Displays your inventory in a list without extra information."""
+
+        # fetch items; if they don't have any, don't bother
         results = await self.db["inventory"].find(user_id=ctx.author.id)
         if not results:
             await ctx.send("You don't have any items!")
         else:
+            # sort alphabetically by item name, then build data for our menu
             sorted_results = sorted(results, key=lambda k: k["name"])
             page_data = [f"{data['quantity']}x **{data['name'].capitalize()}**" for data in sorted_results]
             pages = menuclasses.ListPageMenu(
                 page_data, 10, menuclasses.title_page_number_formatter("Inventory")
             )
 
+            # start menu with built data
             menu = menus.MenuPages(pages, timeout=90)
             await menu.start(ctx)
 
     @commands.command(aliases=["forage"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def gather(self, ctx):
+        """Go in search of valuables."""
+
         await ctx.cogs["Database"].game_advance_time(ctx.author.id, 20)
         current_time = (await ctx.db["game_time"].find_one(user_id=ctx.author.id))["minutes"]
-        # implement "don't do stupid shit" logic here; for now being able to gather whenever is okay
+        emoji_time_display, time_printable = self.calculate_time_details(current_time)
+
+        # "don't do stupid shit" logic
+        strongest_weapon = None
+        durability_lost = None
+        outcome = ActionOutcome.NORMAL
+        if (0 < current_time < 330) or (1110 < current_time < 1440):
+            if random.randint(1, 3) == 3:
+                outcome = ActionOutcome.ATTACKED
+                # get weapons, check if we can defeat this monster
+                results = await self.db["inventory"].find(user_id=ctx.author.id, tool_type="weapon")
+                if results:
+                    strongest_weapon = list(sorted(results, key=lambda k: k["strength"]))[-1]
+                    if strongest_weapon["strength"] >= random.randint(1, 2):
+                        outcome = ActionOutcome.VICTORIOUS
+
         gathered = random.choices(
             ["twig", "pebble", "blade of grass", "branch", "rock", "berry", "apple"],
             weights=[2, 3, 4, 1, 1, 1, 1], k=3
         )
 
         kept = collections.Counter(gathered[:random.randint(1, 3)])  # don't keep all of it
+        if outcome == ActionOutcome.VICTORIOUS:  # give them a special item
+            durability_lost = random.randint(1, 3)
+            kept[random.choice(["fang", "cursed bone"])] = 1
+
         obtained = [f"• {count}x **{name.capitalize()}**" for name, count in kept.items()]
 
-        emoji_time_display = DAYLIGHT_STEPS.copy()
-        emoji_time_display.rotate(-int((current_time / 1440) * 13))
-        duration = pendulum.duration(minutes=current_time)
-        hours_truncated = duration.hours - 12 if duration.hours > 12 else duration.hours
-        time_printable = f"{str(hours_truncated).zfill(2)}:{str(duration.minutes).zfill(2)}"
-        time_suffix = "AM" if 0 < current_time < 719 else "PM"
+        # build the embed
+        embed = discord.Embed(color=16202876)
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        if outcome == ActionOutcome.ATTACKED:
+            embed.description = (
+                f"{' '.join(list(emoji_time_display)[:5])}\n"
+                f"The current time is {time_printable}. You spent 20 minutes forag- \n\n"
+                "**You were attacked by a beast of the night!** You managed to get away, but you lost "
+                "the items that you'd gathered in the process."
+            )
+        elif outcome == ActionOutcome.VICTORIOUS:
+            # maybe get rid of the weapon
+            new_durability = strongest_weapon["durability"] - durability_lost
+            if new_durability <= 0:
+                await self.db["inventory"].delete(_id=strongest_weapon["_id"])
+            else:
+                await self.db["inventory"].upsert(["_id"], _id=strongest_weapon["_id"], durability=new_durability)
 
+            embed.description = (
+                f"{' '.join(list(emoji_time_display)[:5])}\n"
+                f"The current time is {time_printable}. You spent 20 minutes forag- \n\n"
+                "**You were attacked by a beast of the night!** - but it was no match for you!\n"
+                f"Your weapon **{strongest_weapon['name']}** (ID ``{strongest_weapon['_id']}``) lost {durability_lost} "
+                "point(s) of durability, and you gained:\n\n"
+                "{0}".format("\n".join(obtained))
+            )
+        else:
+            embed.description = (
+                f"{' '.join(list(emoji_time_display)[:5])}\n"
+                f"The current time is {time_printable}. You spent 20 minutes foraging and found:\n\n"
+                "{0}".format("\n".join(obtained))
+            )
+
+        if outcome != ActionOutcome.ATTACKED:
+            # give the user their items
+            for name, count in kept.items():
+                to_insert = GENERIC_ITEM_MAPPING[name]
+                await ctx.cogs["Database"].inventory_add(
+                    user_id=ctx.author.id, name=name, description=to_insert["description"], quantity=count,
+                    value=to_insert["value"]
+                )
+
+        await ctx.send(embed=embed)
+
+    @commands.command(aliases=["nap", "rest"])
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def sleep(self, ctx):
+        """Rest through the horrors of the night."""
+
+        results = await ctx.db["game_time"].find_one(user_id=ctx.author.id)
+        if results:
+            current_time = results["minutes"]
+        else:
+            current_time = 600
+
+        if 390 < current_time < 1050:
+            return await ctx.send("You can only sleep at night!")
+
+        new_time = random.choice([560, 580, 600, 620, 640])
+        await ctx.db["game_time"].upsert(["user_id"], user_id=ctx.author.id, minutes=new_time)
+
+        emoji_time_display, time_printable = self.calculate_time_details(new_time)
         embed = discord.Embed(color=16202876)
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
         embed.description = (
             f"{' '.join(list(emoji_time_display)[:5])}\n"
-            f"The current time is {time_printable} {time_suffix}. You spent 20 minutes foraging and found:\n\n"
-            "{0}".format("\n".join(obtained))
+            f"You curl up on the ground and fall asleep. When you wake up again, it's {time_printable}."
+            "\nAny beasts that could cause you harm should have departed by now, so going exploring or gathering "
+            "materials is probably safe."
         )
-
-        for name, count in kept.items():
-            to_insert = GENERIC_ITEM_MAPPING[name]
-            await ctx.cogs["Database"].inventory_add(
-                user_id=ctx.author.id, name=name, description=to_insert["description"], quantity=count,
-                value=to_insert["value"]
-            )
 
         await ctx.send(embed=embed)
 

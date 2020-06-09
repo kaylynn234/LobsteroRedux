@@ -1,0 +1,66 @@
+["primitive workbench"]
+makes = 1
+made_with = false
+ingredients = [
+    { name = "twig", amount = 2 },
+    { name = "pebble", amount = 5 },
+    { name = "rock", amount = 1 },
+]
+
+["primitive binding"]
+makes = 2
+made_with = "primitive workbench"
+ingredients = [
+    { name = "blade of grass", amount = 4 },
+]
+
+["primitive handle"]
+makes = 1
+made_with = "primitive workbench"
+ingredients = [
+    { name = "branch", amount = 3},
+    { name = "primitive binding", amount = 2 },
+]
+
+["primitive axe"]
+makes = 1
+made_with = "primitive workbench"
+ingredients = [
+    { name = "primitive handle", amount = 1 },
+    { name = "primitive binding", amount = 5 },
+    { name = "branch", amount = 1 },
+]
+
+["primitive string"]
+makes = 1
+made_with = "primitive workbench"
+ingredients = [
+    { name = "blade of grass", amount = 6 },
+]
+
+["primitive fabric"]
+makes = 3
+made_with = "primitive workbench"
+ingredients = [
+    { name = "primitive string", amount = 4 },
+]
+
+["primitive chisel and scoop"]
+makes = 1
+made_with = "primitive workbench"
+ingredients = [
+    { name = "primitive handle", amount = 2 },
+    { name = "primitive binding", amount = 4 },
+    { name = "branch", amount = 1 },
+    { name = "primitive fabric", amount = 1 },
+]
+
+["primitive sword"]
+makes = 1
+made_with = "primitive workbench"
+ingredients = [
+    { name = "primitive handle", amount = 1 },
+    { name = "primitive binding", amount = 3 },
+    { name = "branch", amount = 1 },
+    { name = "twig", amount = 8 },
+]

@@ -1,0 +1,186 @@
+["twig"]
+value = 1
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A small innocent-looking twig. It's not worth much on its own, but there's a chance it could be useful \
+when combined with something else. Maybe it could be used to light a fire?
+"""
+
+["pebble"]
+value = 1
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A relatively generic pebble. It looks like a perfect skipping stone, but merchants typically \
+don't buy stones just to throw them, so it'll be a hard sell. It'd be worth more if you did \
+something with it.
+"""
+
+["blade of grass"]
+value = 1
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A very green blade of grass fetched from the ground beneath you. Since grass is abundant, it's worth \
+very little, but it seems springy enough to make some primitive string or bindings.
+"""
+
+["branch"]
+value = 3
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A fallen branch from a nearby tree. It's much larger than a twig, and could be fashioned into a sturdy \
+handle or rod with the right tools. You could potentially carve it into some kind of weapon.
+"""
+
+["rock"]
+value = 3
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A round-ish rock with both a flat and rough side. It's too heavy for you to pick up, but you can roll \
+it around to take it with you. If you were to prop it up somewhere it would be a useful (albeit \
+primitive) workbench.
+"""
+
+["primitive workbench"]
+value = 5
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A large rock propped up on a pile of pebbles. The rough side can be used to sharpen or sand \
+any number of things, while the flat side can be used as a table of sorts.
+"""
+
+["berry"]
+value = 2
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A small round berry. It looks quite ripe, and hopefully it isn't poisonous. Since it's a form of \
+nutrition, it would be worth keeping around in the event that you need a snack.
+"""
+
+["apple"]
+value = 3
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A red apple of a modest size. It looks both juicy and quite nutritious. It would be worth keeping \
+around so that you have something to eat, but a merchant would probably be happy to buy one or two.
+"""
+
+["primitive binding"]
+value = 4
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A thoroughly basic binding - it's enough to wrap two things together, and that's pretty much it. \
+But it does that well, which is what matters - it's sturdy enough for you to potentially build tools using it.
+"""
+
+["primitive string"]
+value = 2
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A thin, twiney rope. It's not very strong, but could be woven into a fabric of sorts with enough patience. \
+Perhaps it could also be used to make netting?
+"""
+
+["primitive fabric"]
+value = 15
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A thin woven fabric. It's scratchy, but it seems resilient enough - maybe it could be used to make some basic clothing?"""
+
+["primitive handle"]
+value = 5
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A piece of wood carved and shaped with basic tools. It's comfortable to hold, and won't give you splinters. Despite \
+having so much weight behind it, it's not cumbersome to wield. It would be a good starting point for a set of tools.
+"""
+
+["primitive axe"]
+value = 12
+tool = true
+tool_type = "axe"
+durability = 10
+strength = 1
+description = """
+A carved piece of wood haphazardly attached to another with some... questionably solid bindings. It won't win you \
+any prizes, but it will cut down a tree for you.
+"""
+
+["primitive chisel and scoop"]
+value = 20
+tool = true
+tool_type = "pickaxe"
+durability = 35
+strength = 1
+description = """
+A tool of two parts: A carefully carved piece of wood for moving piles of dirt and other such materials, and a \
+very sketchy chisel. It's not much, but it is good enough to easily get dirt out of the way and break bits of stone.
+"""
+
+["primitive sword"]
+value = 25
+tool = true
+tool_type = "weapon"
+durability = 20
+strength = 1
+description = """
+It's essentially a very pointy stick with a wooden guard tied on. It makes a satisfying sound when you swing it, \
+and should stave off the horrors of the night if you decide to do something silly.
+"""
+
+["cursed bone"]
+value = 30
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A very sinister looking bone. You're not sure what could have happened to it, but being near it makes you feel \
+incredibly uneasy. Perhaps there is magic involved?
+"""
+
+["fang"]
+value = 30
+tool = false
+tool_type = false
+durability = false
+strength = false
+description = """
+A fang fetched from the corpse of an abomination. It's covered in saliva and smells disgusting, but it could be rather \
+useful - it's quite sharp and seems durable.
+"""
