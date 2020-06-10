@@ -32,7 +32,7 @@ class Database(commands.Cog):
         result = await self.db["inventory"].find_one(user_id=user_id, name=name, description=description, value=value)
         if result:
             await self.db["inventory"].upsert(
-                ["user_id", "name", "description", "value"],
+                ["user_id", "name"],
                 user_id=user_id, name=name, description=description, quantity=quantity + result["quantity"], value=value
             )
         else:
@@ -40,15 +40,17 @@ class Database(commands.Cog):
                 user_id=user_id, name=name, description=description, quantity=quantity, value=value
             )
 
-    # these are extremely thin wrappers - i'm not sure i want to keep them
-    async def inventory_find_one(self, **kwargs):
-        return await self.db["inventory"].find_one(**kwargs)
-
-    async def inventory_find(self, **kwargs):
-        return await self.db["inventory"].find(**kwargs)
-
-    async def inventory_remove(self, **kwargs):
-        await self.db["inventory"].delete(**kwargs)
+    async def inventory_remove(self, user_id: int, name: str, description: str, quantity: int, value: int):
+        result = await self.db["inventory"].find_one(user_id=user_id, name=name, description=description, value=value)
+        if result:
+            new_amount = result["quantity"] - quantity
+            if new_amount > 0:
+                await self.db["inventory"].upsert(
+                    ["user_id", "name"],
+                    user_id=user_id, name=name, description=description, quantity=new_amount, value=value
+                )
+            else:
+                await self.db["inventory"].delete(user_id=user_id, name=name)
 
     # extended_cooldown schema:
     # unique_id: int, this is the "owner" of this cooldown

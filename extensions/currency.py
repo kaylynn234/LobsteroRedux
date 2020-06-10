@@ -72,6 +72,9 @@ DAYLIGHT_STEPS = collections.deque([
 with open("extensions/items.toml") as tomlfile:
     GENERIC_ITEM_MAPPING = toml.load(tomlfile)
 
+with open("extensions/recipes.toml") as tomlfile:
+    CRAFTABLE_ITEM_MAPPING = toml.load(tomlfile)
+
 
 class ActionOutcome(Enum):
     NORMAL = 1
@@ -101,6 +104,15 @@ class Currency(commands.Cog, name="Currency & Items"):
 
     async def before_ready(self):
         self.db = self.bot.db  # type: bigbeans.databean.Databean
+
+    @commands.is_owner()
+    @commands.command()
+    async def giveme(self, ctx, amount: int, *, item):
+        details = GENERIC_ITEM_MAPPING[item]
+        await ctx.cogs["Database"].inventory_add(
+            user_id=ctx.author.id, name=item, description=details["description"],
+            quantity=amount, value=details["value"]
+        )
 
     @commands.command(aliases=["$"])
     async def balance(self, ctx, *, who: discord.Member = None):
@@ -302,6 +314,7 @@ class Currency(commands.Cog, name="Currency & Items"):
                 "{0}".format("\n".join(obtained))
             )
 
+        # only award items if they didn't get attacked
         if outcome != ActionOutcome.ATTACKED:
             # give the user their items
             for name, count in kept.items():
@@ -327,9 +340,11 @@ class Currency(commands.Cog, name="Currency & Items"):
         if 390 < current_time < 1050:
             return await ctx.send("You can only sleep at night!")
 
+        # morning simulator 2k20
         new_time = random.choice([560, 580, 600, 620, 640])
         await ctx.db["game_time"].upsert(["user_id"], user_id=ctx.author.id, minutes=new_time)
 
+        # build embed
         emoji_time_display, time_printable = self.calculate_time_details(new_time)
         embed = discord.Embed(color=16202876)
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
@@ -341,6 +356,103 @@ class Currency(commands.Cog, name="Currency & Items"):
         )
 
         await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def craft(self, ctx, *, item):
+        """Use your materials to build something new."""
+
+        to_craft = CRAFTABLE_ITEM_MAPPING.get(item.lower(), None)
+        if not to_craft:
+            return await ctx.send("That's not a craftable item!")
+
+        to_craft["name"] = item.lower()  # helper
+
+        # get inventory, collate counts
+        inventory = await self.db["inventory"].find(user_id=ctx.author.id)
+        item_counts = collections.Counter()
+        for item in inventory:  # try our best to deal with potential duplicate items
+            item_counts[item["name"]] += item["quantity"]
+
+        print(item_counts)
+
+        # needs a workbench we don't have
+        if to_craft["made_with"] and to_craft["made_with"] not in item_counts:
+            return await ctx.send(f"You need a **{to_craft['made_with'].capitalize()}** to craft this!")
+
+        # make the item summary
+        can_craft = True
+        summary = []
+        for item in to_craft["ingredients"]:
+            if item["amount"] > item_counts[item["name"]]:
+                can_craft = False
+                delta = item["amount"] - item_counts[item["name"]]
+                summary.append(f"❌ {item['amount']}x **{item['name'].capitalize()}**. You need {delta} more!")
+            else:
+                summary.append(f"✅ {item['amount']}x **{item['name'].capitalize()}**. You have enough of this item!")
+
+        if can_craft:
+            # we have everything, so advance time
+            await ctx.cogs["Database"].game_advance_time(ctx.author.id, 40)
+            current_time = (await ctx.db["game_time"].find_one(user_id=ctx.author.id))["minutes"]
+            emoji_time_display, time_printable = self.calculate_time_details(current_time)
+            summary.append(f"\n{' '.join(list(emoji_time_display)[:5])}")
+            summary.append(
+                f"The current time is {time_printable}. "
+                f"You spent 40 minutes crafting and made {to_craft['makes']}x **{to_craft['name'].capitalize()}**"
+            )
+        else:
+            summary.append("\nYou're missing items that you need!")
+
+        # build the embed
+        embed = discord.Embed(color=16202876)
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        embed.description = "\n".join(summary)
+
+        if can_craft:
+            # remove items from inventory
+            for ingredient in to_craft["ingredients"]:
+                details = GENERIC_ITEM_MAPPING[ingredient["name"]]
+                await ctx.cogs["Database"].inventory_remove(
+                    user_id=ctx.author.id, name=ingredient["name"], description=details["description"],
+                    quantity=ingredient["amount"], value=details["value"]
+                )
+
+            # add new crafted item to inventory
+            new = GENERIC_ITEM_MAPPING[to_craft["name"]]
+            await ctx.cogs["Database"].inventory_add(
+                user_id=ctx.author.id, name=to_craft["name"], description=new["description"],
+                quantity=to_craft["makes"], value=new["value"]
+            )
+
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def craftable(self, ctx):
+        """What can you craft with your current tools?"""
+
+        # get inventory so that we know what we can make
+        inventory_names = [item["name"] for item in await self.db["inventory"].find(user_id=ctx.author.id)]
+        can_be_crafted = []
+        for recipe_name, info in CRAFTABLE_ITEM_MAPPING.items():
+            # it either doesn't require a workbench (False) or we have the workbench that we need
+            if info["made_with"] in inventory_names or not info["made_with"]:
+                if info["made_with"]:
+                    can_be_crafted.append(
+                        f"With ``{info['made_with'].capitalize()}``: **{recipe_name.capitalize()}**"
+                    )
+                else:
+                    can_be_crafted.append(f"**{recipe_name.capitalize()}** (no requirements)")
+
+        # build a menu out of it
+        pages = menuclasses.ListPageMenu(
+            can_be_crafted, 10, menuclasses.title_page_number_formatter("Craftable with your current tools")
+        )
+
+        # start menu with built data
+        menu = menus.MenuPages(pages, timeout=90)
+        await menu.start(ctx)
 
 
 def setup(bot):
