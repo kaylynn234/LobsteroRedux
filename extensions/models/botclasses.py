@@ -221,7 +221,7 @@ class CustomHelpCommand(commands.HelpCommand):
         await self.context.send(embed=embed)
 
 
-class Lobstero(commands.Bot):
+class Lobstero(commands.AutoShardedBot):
 
     def __init__(self, *args, config: MutableMapping, **kwargs) -> None:
         self.config = config
