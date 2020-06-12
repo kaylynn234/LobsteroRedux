@@ -42,6 +42,7 @@ DOCSTRING_MAPPING = {
     "gay": "Unleash the powers of homosexuality on any image.",
     "bless": "🛐🛐🛐",
     "nom": "Eating is a fun and enjoyable activity.",
+    "lapse": "I can't quite remember..."
 
 }
 
@@ -100,8 +101,8 @@ If you don't do any of that, Lobstero will search the previous few messages for 
     async def wrap(self, func, *args, **kwargs):
         """Wraps a sync function into a threadpool'd asynchronous executor."""
 
-        func = functools.partial(func, *args, **kwargs)
-        output = await self.bot.loop.run_in_executor(self.bot._pool, func)
+        new_func = functools.partial(func, *args, **kwargs)
+        output = await self.bot.loop.run_in_executor(None, new_func)
 
         return output
 
@@ -158,7 +159,7 @@ If you don't do any of that, Lobstero will search the previous few messages for 
         except commands.BadArgument:
             pass
         else:
-            results.append([str(m.avatar_url_as(static_format="png", size=2048)), True])
+            results.append([str(m.avatar_url_as(format="png", size=2048)), True])
 
         # Don't bother with this for now
         # 2: Try emoji lookup
@@ -252,7 +253,7 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         # ugly, will fix later
         try:
-            processed = list(await self.wrap(to_do(result)))
+            processed = list(await self.wrap(to_do, result))
         except ImageScriptException as e:
             return await ctx.send(str(e))
 
@@ -425,14 +426,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
         return output, "halftone.png"
 
-    def addzero(self, num):
-        if len(str(num)) < 2:
-            return "00" + str(num)
-        if len(str(num)) < 3:
-            return "0" + str(num)
-
-        return str(num)
-
     def package_wheel(self, wheel, degrees, ban, ban_mask, banhandler):
         whl = wheel.rotate(degrees)
         whl.paste(ban, None, ban)
@@ -500,7 +493,6 @@ If you don't do any of that, Lobstero will search the previous few messages for 
         return canvas, "quilt.png"
 
     def make_meme(self, topString, bottomString, filename):
-
         img = Image.open(filename).convert("RGBA")
 
         wpercent = (2048/float(img.size[0]))
@@ -657,6 +649,37 @@ If you don't do any of that, Lobstero will search the previous few messages for 
             im.paste(to_stamp, position)
 
         return im, "tunnel.png"
+
+    def _generate_blot(self, radius):
+        canvas = Image.new("RGBA", (radius * 2, radius * 2), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(canvas)
+        draw.ellipse((0, 0, radius * 2, radius * 2), (255, 255, 255, 255))
+        expanded = ImageOps.expand(canvas, radius)
+        blurred = expanded.filter(ImageFilter.BoxBlur(radius / 9.5))
+
+        return blurred
+
+    def image_do_lapse(self, result):
+        base = Image.open(result.data).convert("RGBA")
+        average = int((base.size[0] + base.size[1]) / 2)
+        new = base.copy()
+
+        for _ in range(random.randint(160, 200)):
+            radius = random.randint(int(average / 30), int(average / 5))
+            blot = self._generate_blot(radius)
+
+            random_x = random.randint(radius, base.size[0] - radius)
+            random_y = random.randint(radius, base.size[1] - radius)
+
+            chunk = base.crop((random_x, random_y, random_x + radius * 2, random_y + radius * 2))
+            expanded_chunk = ImageOps.expand(chunk, radius)
+
+            new_random_x = random.randint(0, base.size[0])
+            new_random_y = random.randint(0, base.size[1])
+
+            new.paste(expanded_chunk, (new_random_x, new_random_y), blot)
+
+        return new, "lapse.png"
 
     @commands.command()
     async def shitpost(self, ctx, *, url=None):

@@ -45,7 +45,7 @@ def run(**kwargs):
     if config["advanced"]["override_max_workers"]:
         bot._pool = ThreadPoolExecutor(max_workers=config["advanced"]["max_workers"])
     else:
-        bot._pool = ThreadPoolExecutor(max_workers=10)
+        bot._pool = ThreadPoolExecutor(max_workers=40)
 
     for extension in INITIAL_EXTENSIONS:
         try:

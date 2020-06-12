@@ -295,8 +295,9 @@ class Lobstero(commands.AutoShardedBot):
         if message.author.bot:
             return
 
+        # get context & speak if spoken to, but don't speak if a command is used
         ctx = await self.get_context(message)
-        if f"<@{self.user.id}>" in message.content or f"<@!{self.user.id}>" in message.content:
+        if (f"<@{self.user.id}>" in message.content or f"<@!{self.user.id}>" in message.content) and not ctx.command:
             try:
                 await message.channel.send(await self.markov(ctx))
             except discord.Forbidden:
