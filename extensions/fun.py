@@ -1,3 +1,6 @@
+import random
+import re
+
 from io import BytesIO
 
 import discord
@@ -145,6 +148,29 @@ class Fun(commands.Cog):
         results = await self.lobstero_api_request(ctx, number, "cursedcats")
         results["embed"].title = f"Cursed cat #{results['response']['index']}"
         await ctx.send(embed=results["embed"], file=results["file"])
+
+    @commands.command()
+    async def conglomerate(self, ctx):
+        """Randomized text madness."""
+
+        words = filter(None, [message.clean_content async for message in ctx.channel.history(limit=250)])
+        sentence = " ".join(random.choice(list(words)) for _ in range(random.randint(6, 18)))
+        await ctx.send(sentence)
+
+    @commands.command(name="88x31", aliases=["31x88"])
+    async def eightyeightxthreeone(self, ctx):
+        """Grabs a random 88x31 button from https://cyber.dabamos.de/88x31/."""
+
+        async with self.bot.session.get("https://cyber.dabamos.de/88x31/") as resp:
+            data = await resp.text()
+
+        # get a list of urls & build embed, then send
+        found = re.findall('<img.*?src="(.*?)"[^\>]+>', data)
+        embed = discord.Embed(title="88x31", color=16202876)
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        embed.set_image(url=f"https://cyber.dabamos.de/88x31/{random.choice(found)}")
+
+        await ctx.send(embed=embed)
 
 
 def setup(bot):

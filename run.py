@@ -16,7 +16,8 @@ INITIAL_EXTENSIONS = [
     "extensions.images",
     "extensions.bottogames",
     "extensions.currency",
-    "extensions.fun"
+    "extensions.fun",
+    "extensions.meta"
 ]
 
 
