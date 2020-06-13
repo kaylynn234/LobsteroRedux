@@ -43,7 +43,7 @@ class Meta(commands.Cog):
         embed.add_field(name="Bot invite link", value="[invite.lobstero.xyz](http://invite.lobstero.xyz)")
         embed.add_field(name="Guilds", value=len(self.bot.guilds))
         embed.add_field(name="Library", value=f"Discord.py {pkg_resources.get_distribution('discord.py').version}")
-        embed.add_field(name="Process", value=f"{memory_usage} MB RAM & {cpu_usage}% CPU")
+        embed.add_field(name="Process", value=f"{memory_usage:.2f} MB RAM & {cpu_usage:.2f}% CPU")
         embed.set_footer(text=f"Python v{sys.version.split(' ')[0]}", icon_url="https://i.imgur.com/5BFecvA.png")
 
         await ctx.send(embed=embed)

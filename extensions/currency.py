@@ -247,7 +247,7 @@ class Currency(commands.Cog, name="Currency & Items"):
             await menu.start(ctx)
 
     @commands.command(aliases=["forage"])
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def gather(self, ctx):
         """Go in search of valuables."""
 
@@ -258,6 +258,7 @@ class Currency(commands.Cog, name="Currency & Items"):
         # "don't do stupid shit" logic
         strongest_weapon = None
         durability_lost = None
+        bonus = 0
         outcome = ActionOutcome.NORMAL
         if (0 < current_time < 330) or (1110 < current_time < 1440):
             if random.randint(1, 3) == 3:
@@ -268,10 +269,11 @@ class Currency(commands.Cog, name="Currency & Items"):
                     strongest_weapon = list(sorted(results, key=lambda k: k["strength"]))[-1]
                     if strongest_weapon["strength"] >= random.randint(1, 2):
                         outcome = ActionOutcome.VICTORIOUS
+                        bonus = random.randint(6, 13)
 
         gathered = random.choices(
             ["twig", "pebble", "blade of grass", "branch", "rock", "berry", "apple"],
-            weights=[2, 3, 4, 1, 1, 1, 1], k=3
+            weights=[2, 3, 4, 1, 1, 1, 1], k=3 + bonus
         )
 
         kept = collections.Counter(gathered[:random.randint(1, 3)])  # don't keep all of it
