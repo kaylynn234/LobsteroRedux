@@ -6,6 +6,7 @@ from io import BytesIO
 import discord
 import bigbeans
 
+from PIL import Image
 from extensions.models import menuclasses
 from discord.ext import commands, menus
 
@@ -171,6 +172,41 @@ class Fun(commands.Cog):
         embed.set_image(url=f"https://cyber.dabamos.de/88x31/{random.choice(found)}")
 
         await ctx.send(embed=embed)
+
+    @commands.command()
+    async def inspire(self, ctx):
+        """Sends you a few "inspiring" quotes."""
+
+        images = []
+        for i in range(4):
+            async with self.session.get("https://inspirobot.me/api?generate=true") as resp:
+                url = await resp.text()
+
+            async with self.session.get(url) as resp:
+                image_bytes = BytesIO(await resp.read())
+
+            image_bytes.seek(0)
+            images.append(Image.open(image_bytes))
+
+        # would executor this normally, but too lazy and this is a cheap operation
+        # definitely a better way to do this, but again, too lazy - i'll patch it up later i promise
+        canvas = Image.new("RGBA", (1300, 1300), (0, 0, 0, 0))
+        canvas.paste(images[0], (0, 0))
+        canvas.paste(images[1], (650, 0))
+        canvas.paste(images[2], (0, 650))
+        canvas.paste(images[3], (650, 650))
+
+        buffer = BytesIO()
+        canvas.save(buffer, format="PNG")
+        buffer.seek(0)
+
+        # build embeds and send stuff
+        embed = discord.Embed(title="\"Inspiring\" quote(s)", color=16202876)
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        embed.set_image(url=f"attachment://inspire.png")
+        ready_to_send = discord.File(buffer, "inspire.png")
+
+        await ctx.send(embed=embed, file=ready_to_send)
 
 
 def setup(bot):
