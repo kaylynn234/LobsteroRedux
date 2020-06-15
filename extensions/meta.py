@@ -24,8 +24,8 @@ class Meta(commands.Cog):
         embed = discord.Embed(title="Bot information", color=16202876)
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
 
-        memory_usage = "``N/A``"
-        cpu_usage = "``N/A``"
+        memory_usage = 0
+        cpu_usage = 0
 
         # get stats
         try:

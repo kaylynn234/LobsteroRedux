@@ -319,60 +319,64 @@ class Lobstero(commands.AutoShardedBot):
         )
 
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send(
+            return await ctx.send(
                 "Missing argument \"{0}\" - try ``{1}help {2}``?".format(
                     error.param.name, ctx.prefix, ctx.command.qualified_name
                 ), delete_after=10
             )
 
         if isinstance(error, commands.BadArgument):
-            await ctx.send(
+            return await ctx.send(
                 "Bad command usage - try ``{0}help {1}``?".format(
                     ctx.prefix, ctx.command.qualified_name
                 ), delete_after=10
             )
 
         if isinstance(error, commands.BadArgument):
-            await ctx.send(
+            return await ctx.send(
                 "Too many arguments - try ``{0}help {1}``?".format(
                     ctx.prefix, ctx.command.qualified_name
                 ), delete_after=10
             )
 
         if isinstance(error, commands.BotMissingPermissions):
-            await ctx.send(
+            return await ctx.send(
                 "I am missing permissions:\n{0}".format(
                     "``" + "``, ``".join(error.missing_perms) + "``"
                 ), delete_after=10
             )
 
         if isinstance(error, commands.MissingPermissions):
-            await ctx.send(
+            return await ctx.send(
                 "You are missing permissions:\n{0}".format(
                     "``" + "``, ``".join(error.missing_perms) + "``"
                 ), delete_after=10
             )
 
         if isinstance(error, commands.NotOwner):
-            await ctx.send(
+            return await ctx.send(
                 "<a:dread_alarm:670546197060124673> not owner! <a:dread_alarm:670546197060124673>",
                 delete_after=10
             )
 
         if isinstance(error, commands.DisabledCommand):
-            await ctx.send(
+            return await ctx.send(
                 "<a:dread_alarm:670546197060124673> Command disabled! <a:dread_alarm:670546197060124673>",
                 delete_after=10
             )
 
-        if isinstance(error, commands.MaxConcurrencyReached):
-            await ctx.send("Command already in use!", delete_after=10)
-
         if isinstance(error, commands.CommandOnCooldown):
-            await ctx.send("Command on cooldown - try again in {:.2f}s.".format(error.retry_after), delete_after=10)
+            return await ctx.send(
+                "Command on cooldown - try again in {:.2f}s.".format(error.retry_after), delete_after=10
+            )
+
+        if isinstance(error, commands.MaxConcurrencyReached):
+            return await ctx.send("Command already in use!", delete_after=10)
 
         if isinstance(error, OverflowError):
-            await ctx.send("**``Reconsider``**", delete_after=10)
+            return await ctx.send("**``Reconsider``**", delete_after=10)
 
         if isinstance(error, exceptions.OnExtendedCooldown):
-            await ctx.send("⏰ You're on cooldown! You can do this again {}!".format(str(error)), delete_after=10)
+            return await ctx.send("⏰ You're on cooldown! You can do this again {}!".format(str(error)), delete_after=10)
+
+        await ctx.send("<a:dread_alarm:670546197060124673> error! tell kaylynn")
