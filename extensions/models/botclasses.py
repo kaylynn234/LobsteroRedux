@@ -129,10 +129,11 @@ class CustomHelpCommand(commands.HelpCommand):
         if isinstance(command, commands.Group):
             description[0] += "(subcommand)"
             description[1] += " (*subcommand*) represents where a subcommand can be used."
-            embed.add_field(
-                name=f"{len(command.commands)} subcommand(s):",
-                value=f"``{', '.join([c.name for c in command.commands])}``"
-            )
+            if command.commands:
+                embed.add_field(
+                    name=f"{len(command.commands)} subcommand(s):",
+                    value=f"``{', '.join([c.name for c in command.commands])}``"
+                )
 
         if command.aliases:
             embed.add_field(
@@ -239,7 +240,7 @@ class Lobstero(commands.AutoShardedBot):
 
     async def markov(self, ctx) -> str:
         if self._markov_model is None:
-            return "Markov is not configured ."
+            return "Markov is not configured."
         else:
             result = f"{await self.loop.run_in_executor(self._pool, self._unwrapped_markov)} "
             result = re.sub("<@(!?)([0-9]*)>", ctx.author.mention, result)
@@ -291,12 +292,29 @@ class Lobstero(commands.AutoShardedBot):
         self.logger.info("Connection to discord established.")
 
     async def on_message(self, message):
-        # implement channel blocking here; until then
         if message.author.bot:
             return
 
-        # get context & speak if spoken to, but don't speak if a command is used
+        # get context - this is mainly for later
         ctx = await self.get_context(message)
+
+        # check if the bot can be used here
+        usage = []
+        if message.guild:
+            usage = await self.db["channel_locks"].find(guild_id=message.guild.id)
+
+        lock_channels = [int(item["channel_id"]) for item in usage]
+
+        # if lock_channels is empty, no channels are locked and the bot can be used freely
+        # if lock_channels is not empty and message channel is not in it, return - bot cannot be used here
+        # regardless of all of this, if any usage of the "lock" command is attempted, do not return - bot can be used
+        command_parent = getattr(ctx.command.root_parent, "name", None) if ctx.command else None
+        command_name = ctx.command.name if ctx.command else None
+        unblockable_command_used = command_parent == "lock" or command_name == "lock"
+        if lock_channels and message.channel.id not in lock_channels and not unblockable_command_used:
+            return
+
+        # speak if spoken to, but only if a command isn't used
         if (f"<@{self.user.id}>" in message.content or f"<@!{self.user.id}>" in message.content) and not ctx.command:
             try:
                 await message.channel.send(await self.markov(ctx))
@@ -373,10 +391,13 @@ class Lobstero(commands.AutoShardedBot):
         if isinstance(error, commands.MaxConcurrencyReached):
             return await ctx.send("Command already in use!", delete_after=10)
 
+        if isinstance(error, commands.NoPrivateMessage):
+            return await ctx.send("You cannot do this in DMs!", delete_after=10)
+
         if isinstance(error, OverflowError):
             return await ctx.send("**``Reconsider``**", delete_after=10)
 
         if isinstance(error, exceptions.OnExtendedCooldown):
             return await ctx.send("⏰ You're on cooldown! You can do this again {}!".format(str(error)), delete_after=10)
 
-        await ctx.send("<a:dread_alarm:670546197060124673> error! tell kaylynn")
+        await ctx.send("<a:dread_alarm:670546197060124673> error! tell kaylynn", delete_after=10)
