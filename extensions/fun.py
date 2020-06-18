@@ -1,3 +1,4 @@
+import math
 import random
 import re
 
@@ -9,6 +10,27 @@ import bigbeans
 from PIL import Image
 from extensions.models import menuclasses
 from discord.ext import commands, menus
+
+
+HUG_BADGES = [
+    {"emoji": "<:woodhug:571264854376185867>", "range": (0, 10)},
+    {"emoji": "<:bronzehug:571264868930420746>", "range": (11, 50)},
+    {"emoji": "<:silverhug:571264858520289290>", "range": (51, 400)},
+    {"emoji": "<:goldhug:571264849179443200>", "range": (401, 1500)},
+    {"emoji": "<:diamondhug:571264832565673984>", "range": (1501, 3000)},
+]
+
+LOCKED_HUG = "<:lockedhug:571264807119093769>"
+
+
+def progress_bar(char_count: int, progress: float) -> str:
+    blocks = [" ", "▏", "▎", "▍", "▌", "▋", "▊", "▉"]
+    progress = min(1, max(0, progress))
+    width = math.floor(progress * char_count)
+    remainder = (progress * char_count) % 1
+    part = "" if (char_count - width - 1) < 0 else blocks[math.floor(remainder * 8)]
+
+    return f"{blocks[-1] * width}{part}".ljust(char_count)
 
 
 class Fun(commands.Cog):
@@ -207,6 +229,95 @@ class Fun(commands.Cog):
         ready_to_send = discord.File(buffer, "inspire.png")
 
         await ctx.send(embed=embed, file=ready_to_send)
+
+    @commands.group(invoke_without_command=True, ignore_extra=False)
+    @commands.cooldown(1, 60, commands.BucketType.user)
+    async def hug(self, ctx, *people: discord.User):
+        """Hug your friends!"""
+
+        people = tuple(person for person in people if person.id != ctx.author.id)
+        if not people:
+            return await ctx.send("You can't hug nobody! (or yourself!)")
+        if len(people) > 8:
+            return await ctx.send("You can't hug that many people at once!  ")
+
+        if len(people) == 1:
+            mention_string = f"{people[0].mention}!"
+        elif len(people) == 2:
+            mention_string = f"{people[0].mention} and {people[1].mention}!"
+        else:
+            mention_string = ", ".join([person.mention for person in people[:-1]]) + f" and {people[-1].mention}!"
+
+        # get some hug stats
+        hug_results = await self.db["action_counts"].find_one(user_id=ctx.author.id, action="hug")
+        current_hug_count = hug_results["amount"] if hug_results else 0
+
+        # tell them about badges
+        message = None
+        new_hugs = current_hug_count + len(people)
+        for spec in HUG_BADGES:
+            is_in_range = spec["range"][0] <= current_hug_count <= spec["range"][1]  # are we in this badge tier?
+            until_next = new_hugs - spec["range"][1]
+
+            if is_in_range and new_hugs > spec["range"][1]:  # we have exceeded this badge tier, award badge
+                message = f"**You earned the {spec['emoji']} badge!**"
+            elif is_in_range and 0 > until_next > -5:  # are we close to exceeding this badge tier?
+                message = f"**Psst!** You're **{abs(until_next) + 1}** hugs away from a new badge!"
+
+        # update the DB with new data
+        await self.db["action_counts"].upsert(
+            ["user_id", "hug"], user_id=ctx.author.id, action="hug", amount=new_hugs
+        )
+
+        # build embed
+        embed = discord.Embed(color=16202876)
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        embed.description = f"{ctx.author.mention} hugs {mention_string}\n{message or ''}"
+
+        await ctx.send(embed=embed)
+
+    @hug.command(name="progress", aliases=["stats"])
+    async def hug_progress(self, ctx):
+        """Check how close you are to a new hug badge, or see the badges you already have."""
+
+        # get some hug stats
+        hug_results = await self.db["action_counts"].find_one(user_id=ctx.author.id, action="hug")
+        current_hug_count = hug_results["amount"] if hug_results else 0
+
+        badge_list = [LOCKED_HUG for _ in range(5)]
+        badge_count = 0
+        for i, spec in enumerate(HUG_BADGES):
+            if current_hug_count > spec["range"][1]:
+                badge_list[i] = spec["emoji"]  # we have this badge
+                badge_count += 1
+
+            if spec["range"][0] <= current_hug_count <= spec["range"][1]:
+                # get the progress bar, and the badge we're working towards
+                completion = current_hug_count / (spec["range"][1] + 1)
+                bar = progress_bar(20, completion)
+                percentage = f"{round(completion * 100, 1)}%"
+                emoji = LOCKED_HUG
+
+                # get our current badge
+                current_badge_index = HUG_BADGES.index(spec) - 1
+                previous_emoji = "No badge!" if current_badge_index == -1 else HUG_BADGES[current_badge_index]["emoji"]
+
+                break
+        else:  # no match found, too many hugs? or maybe too little - give them a cute error
+            bar = "ERROR! TOO MANY HUG!"
+            percentage = "√-1%"
+            emoji = previous_emoji = "<a:hope_alarm:670546197504589824>"
+
+        # build embed
+        embed = discord.Embed(title="Hugs & badges", color=16202876)
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        embed.description = f"{previous_emoji} ``[{bar}]`` {emoji} ({percentage} complete)"
+        embed.add_field(
+            name="Current progress",
+            value=f"**{current_hug_count}** hugs given, and **{badge_count}** badge(s) earned:\n{''.join(badge_list)}"
+        )
+
+        await ctx.send(embed=embed)
 
 
 def setup(bot):
