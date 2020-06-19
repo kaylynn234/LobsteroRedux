@@ -25,32 +25,20 @@ class Database(commands.Cog):
     # inventory schema:
     # user_id: int, the owner of this item
     # name: text, the name of this item
-    # description: text, description of this item
-    # quantity: int, amount of this item owned
-    # value: int, value in coin per item
-    async def inventory_add(self, user_id: int, name: str, description: str, quantity: int, value: int):
-        result = await self.db["inventory"].find_one(user_id=user_id, name=name, description=description, value=value)
-        if result:
-            await self.db["inventory"].upsert(
-                ["user_id", "name"],
-                user_id=user_id, name=name, description=description, quantity=quantity + result["quantity"], value=value
-            )
-        else:
-            await self.db["inventory"].insert(
-                user_id=user_id, name=name, description=description, quantity=quantity, value=value
-            )
+    # durability: int, the durability of this item (this ties into tool stuff)
+    async def inventory_add(self, user_id: int, name: str, durability: int = 0):
+        await self.db["inventory"].insert(user_id=user_id, name=name, durability=durability)
 
-    async def inventory_remove(self, user_id: int, name: str, description: str, quantity: int, value: int):
-        result = await self.db["inventory"].find_one(user_id=user_id, name=name, description=description, value=value)
-        if result:
-            new_amount = result["quantity"] - quantity
-            if new_amount > 0:
-                await self.db["inventory"].upsert(
-                    ["user_id", "name"],
-                    user_id=user_id, name=name, description=description, quantity=new_amount, value=value
-                )
-            else:
-                await self.db["inventory"].delete(user_id=user_id, name=name)
+    async def inventory_remove(self, user_id: int, name: str, quantity: int):
+        # because postgresql is stupid and i can't be fucked dealing with it at midnight i'm going to do this a bad way
+        results = await self.db["inventory"].find(user_id=user_id, name=name)
+        ids = [str(_id["_id"]) for _, _id in zip(range(quantity), results)]  # dumb way to get only x ids
+        query = (
+            f"""DELETE FROM inventory
+            WHERE _id IN ({', '.join(ids)})"""
+        )
+
+        await self.db.execute_query(query)
 
     # extended_cooldown schema:
     # unique_id: int, this is the "owner" of this cooldown

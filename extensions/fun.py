@@ -284,6 +284,7 @@ class Fun(commands.Cog):
         hug_results = await self.db["action_counts"].find_one(user_id=ctx.author.id, action="hug")
         current_hug_count = hug_results["amount"] if hug_results else 0
 
+        # we make a list of badges that are locked by default, and fill them in with unlocked ones later on
         badge_list = [LOCKED_HUG for _ in range(5)]
         badge_count = 0
         for i, spec in enumerate(HUG_BADGES):

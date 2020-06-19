@@ -70,10 +70,9 @@ DAYLIGHT_STEPS = collections.deque([
 ])
 
 with open("extensions/items.toml") as tomlfile:
-    GENERIC_ITEM_MAPPING = toml.load(tomlfile)
-
-with open("extensions/recipes.toml") as tomlfile:
-    CRAFTABLE_ITEM_MAPPING = toml.load(tomlfile)
+    item_data = toml.load(tomlfile)
+    ITEM_MAPPING = defaultdict(lambda: item_data["item 404"])
+    ITEM_MAPPING.update(item_data)
 
 
 class ActionOutcome(Enum):
@@ -108,11 +107,8 @@ class Currency(commands.Cog, name="Currency & Items"):
     @commands.is_owner()
     @commands.command()
     async def giveme(self, ctx, amount: int, *, item):
-        details = GENERIC_ITEM_MAPPING[item]
-        await ctx.cogs["Database"].inventory_add(
-            user_id=ctx.author.id, name=item, description=details["description"],
-            quantity=amount, value=details["value"]
-        )
+        for _ in range(amount):
+            await ctx.cogs["Database"].inventory_add(user_id=ctx.author.id, name=item, durability=100)
 
     @commands.command(aliases=["$"])
     async def balance(self, ctx, *, who: discord.Member = None):
@@ -201,12 +197,13 @@ class Currency(commands.Cog, name="Currency & Items"):
         if not results:
             await ctx.send("You don't have any items!")
         else:
-            sorted_results = sorted(results, key=lambda k: k["name"])
+            sorted_results = collections.Counter([item["name"] for item in sorted(results, key=lambda k: k["name"])])
             embeds = []
-            for data in sorted_results:
+            for name, count in sorted_results.items():
+                item_details = ITEM_MAPPING[name]
                 embed = discord.Embed(
-                    title=data["name"].capitalize() or "(No item name - how did you get here?)",
-                    description=data["description"] or "(No extended description)", color=16202876
+                    title=name,
+                    description=item_details["description"] or "(No extended description)", color=16202876
                 )
 
                 # build embed content
@@ -214,8 +211,8 @@ class Currency(commands.Cog, name="Currency & Items"):
                 embed.add_field(
                     name="Quantity",
                     value=(
-                        f"You have {data['quantity'] or 1}x of this item, worth a total of "
-                        f"{(data['quantity'] or 1) * (data['value'] or 0)} {COIN} ({data['value'] or 0} {COIN} each) "),
+                        f"You have {count}x of this item, worth a total of "
+                        f"{count * (item_details['value'] or 0)} {COIN} ({item_details['value'] or 0} {COIN} each) "),
                     inline=False
                 )
 
@@ -236,8 +233,8 @@ class Currency(commands.Cog, name="Currency & Items"):
             await ctx.send("You don't have any items!")
         else:
             # sort alphabetically by item name, then build data for our menu
-            sorted_results = sorted(results, key=lambda k: k["name"])
-            page_data = [f"{data['quantity']}x **{data['name'].capitalize()}**" for data in sorted_results]
+            sorted_results = collections.Counter([item["name"] for item in sorted(results, key=lambda k: k["name"])])
+            page_data = [f"{count}x **{name.capitalize()}**" for name, count in sorted_results.items()]
             pages = menuclasses.ListPageMenu(
                 page_data, 10, menuclasses.title_page_number_formatter("Inventory")
             )
@@ -255,22 +252,44 @@ class Currency(commands.Cog, name="Currency & Items"):
         current_time = (await ctx.db["game_time"].find_one(user_id=ctx.author.id))["minutes"]
         emoji_time_display, time_printable = self.calculate_time_details(current_time)
 
-        # "don't do stupid shit" logic
+        # appease the linter
         strongest_weapon = None
+        strongest_weapon_db_entry = None
         durability_lost = None
         bonus = 0
         outcome = ActionOutcome.NORMAL
+
+        # "don't do stupid shit" logic
         if (0 < current_time < 330) or (1110 < current_time < 1440):
             if random.randint(1, 3) == 3:
                 outcome = ActionOutcome.ATTACKED
                 # get weapons, check if we can defeat this monster
-                results = await self.db["inventory"].find(user_id=ctx.author.id, tool_type="weapon")
-                if results:
-                    strongest_weapon = list(sorted(results, key=lambda k: k["strength"]))[-1]
-                    if strongest_weapon["strength"] >= random.randint(1, 2):
+                # i would've liked to do this differently, but can't think of a better method right now
+                # first we narrow down to the distinct items that the user owns
+                distinct_owned_items = await self.db.fetch_query(
+                    f"SELECT DISTINCT on (name) name, user_id FROM inventory WHERE user_id = {ctx.author.id}"
+                )
+
+                # now that we have owned items from the db, we get all items that are tools
+                # i would want to make this a dict, but it makes the next bits annoying - perhaps there's a better way?
+                tools = [(key, value) for key, value in ITEM_MAPPING.items() if value.get("tool", None)]
+                # filter that down to all weapons
+                weapons = list(filter(lambda k: k[1]["tool"]["tool_type"] == "weapon", tools))
+                # now we filter weapons down to weapons we actually have
+                distinct_names = [item["name"] for item in distinct_owned_items]
+                owned_weapons = [weapon for weapon in weapons if weapon[0] in distinct_names]
+                # get the strongest if we own any weapons
+                if owned_weapons:
+                    strongest_weapon = sorted(owned_weapons, key=lambda k: k[1]["tool"]["strength"], reverse=True)[0]
+                    roll = random.randint(1, 2)
+                    if strongest_weapon[1]["tool"]["strength"] >= roll:
                         outcome = ActionOutcome.VICTORIOUS
                         bonus = random.randint(6, 13)
+                        strongest_weapon_db_entry = await self.db["inventory"].find_one(
+                            user_id=ctx.author.id, name=strongest_weapon[0]
+                        )
 
+        # in the future i'll do this differently, for now it'll look like this
         gathered = random.choices(
             ["twig", "pebble", "blade of grass", "branch", "rock", "berry", "apple"],
             weights=[2, 3, 4, 1, 1, 1, 1], k=3 + bonus
@@ -295,18 +314,20 @@ class Currency(commands.Cog, name="Currency & Items"):
             )
         elif outcome == ActionOutcome.VICTORIOUS:
             # maybe get rid of the weapon
-            new_durability = strongest_weapon["durability"] - durability_lost
+            new_durability = strongest_weapon_db_entry["durability"] - durability_lost
             if new_durability <= 0:
-                await self.db["inventory"].delete(_id=strongest_weapon["_id"])
+                await self.db["inventory"].delete(_id=strongest_weapon_db_entry["_id"])
             else:
-                await self.db["inventory"].upsert(["_id"], _id=strongest_weapon["_id"], durability=new_durability)
+                await self.db["inventory"].upsert(
+                    ["_id"], _id=strongest_weapon_db_entry["_id"], durability=new_durability
+                )
 
             embed.description = (
                 f"{' '.join(list(emoji_time_display)[:5])}\n"
                 f"The current time is {time_printable}. You spent 20 minutes forag- \n\n"
                 "**You were attacked by a beast of the night!** - but it was no match for you!\n"
-                f"Your weapon **{strongest_weapon['name']}** (ID ``{strongest_weapon['_id']}``) lost {durability_lost} "
-                "point(s) of durability, and you gained:\n\n"
+                f"Your weapon **{strongest_weapon_db_entry['name']}** (ID ``{strongest_weapon_db_entry['_id']}``) "
+                f"lost {durability_lost} point(s) of durability, and you gained:\n\n"
                 "{0}".format("\n".join(obtained))
             )
         else:
@@ -320,11 +341,8 @@ class Currency(commands.Cog, name="Currency & Items"):
         if outcome != ActionOutcome.ATTACKED:
             # give the user their items
             for name, count in kept.items():
-                to_insert = GENERIC_ITEM_MAPPING[name]
-                await ctx.cogs["Database"].inventory_add(
-                    user_id=ctx.author.id, name=name, description=to_insert["description"], quantity=count,
-                    value=to_insert["value"]
-                )
+                for _ in range(count):  # TODO: move this to an execute many, will chug later on otherwise
+                    await ctx.cogs["Database"].inventory_add(user_id=ctx.author.id, name=name)
 
         await ctx.send(embed=embed)
 
@@ -364,19 +382,17 @@ class Currency(commands.Cog, name="Currency & Items"):
     async def craft(self, ctx, *, item):
         """Use your materials to build something new."""
 
-        to_craft = CRAFTABLE_ITEM_MAPPING.get(item.lower(), None)
+        to_craft = ITEM_MAPPING.get(item.lower(), {}).get("crafting", {})
         if not to_craft:
             return await ctx.send("That's not a craftable item!")
 
         to_craft["name"] = item.lower()  # helper
 
         # get inventory, collate counts
-        inventory = await self.db["inventory"].find(user_id=ctx.author.id)
-        item_counts = collections.Counter()
-        for item in inventory:  # try our best to deal with potential duplicate items
-            item_counts[item["name"]] += item["quantity"]
-
-        print(item_counts)
+        inventory = await self.db["inventory"].find(user_id=ctx.author.id)  # :grimace:
+        # i want to make this counting stuff SQL but not sure how to do that yet, will look later
+        item_names = [item["name"] for item in inventory]
+        item_counts = collections.Counter(item_names)
 
         # needs a workbench we don't have
         if to_craft["made_with"] and to_craft["made_with"] not in item_counts:
@@ -414,18 +430,19 @@ class Currency(commands.Cog, name="Currency & Items"):
         if can_craft:
             # remove items from inventory
             for ingredient in to_craft["ingredients"]:
-                details = GENERIC_ITEM_MAPPING[ingredient["name"]]
                 await ctx.cogs["Database"].inventory_remove(
-                    user_id=ctx.author.id, name=ingredient["name"], description=details["description"],
-                    quantity=ingredient["amount"], value=details["value"]
+                    user_id=ctx.author.id, name=ingredient["name"], quantity=ingredient["amount"]
                 )
 
+            # try tool information, :grimace: this is suuuuper ugly
+            new_durability = ITEM_MAPPING[to_craft["name"]].get("tool", {"durability": 0})["durability"]
+
             # add new crafted item to inventory
-            new = GENERIC_ITEM_MAPPING[to_craft["name"]]
-            await ctx.cogs["Database"].inventory_add(
-                user_id=ctx.author.id, name=to_craft["name"], description=new["description"],
-                quantity=to_craft["makes"], value=new["value"]
-            )
+            # TODO: fix this so that it doesn't chug with many insertions
+            for _ in range(to_craft["makes"]):
+                await ctx.cogs["Database"].inventory_add(
+                    user_id=ctx.author.id, name=to_craft["name"], durability=new_durability
+                )
 
         await ctx.send(embed=embed)
 
@@ -437,15 +454,19 @@ class Currency(commands.Cog, name="Currency & Items"):
         # get inventory so that we know what we can make
         inventory_names = [item["name"] for item in await self.db["inventory"].find(user_id=ctx.author.id)]
         can_be_crafted = []
-        for recipe_name, info in CRAFTABLE_ITEM_MAPPING.items():
+        for name, data in ITEM_MAPPING.items():
+            info = data.get("crafting", None)
+            if not info:
+                continue
+
             # it either doesn't require a workbench (False) or we have the workbench that we need
             if info["made_with"] in inventory_names or not info["made_with"]:
                 if info["made_with"]:
                     can_be_crafted.append(
-                        f"With ``{info['made_with'].capitalize()}``: **{recipe_name.capitalize()}**"
+                        f"With ``{info['made_with'].capitalize()}``: **{name.capitalize()}**"
                     )
                 else:
-                    can_be_crafted.append(f"**{recipe_name.capitalize()}** (no requirements)")
+                    can_be_crafted.append(f"**{name.capitalize()}** (no requirements)")
 
         # build a menu out of it
         pages = menuclasses.ListPageMenu(
