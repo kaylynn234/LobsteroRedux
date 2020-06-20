@@ -137,10 +137,15 @@ class maize_array():
 
 
 class MaizeGame(menus.Menu):
-    """The class that maize maze is run with."""
+    """
+    The class that maize maze is run with.
+    """
 
     def __init__(self):
-        """Does the things."""
+        """
+        Does the things.
+        """
+
         super().__init__(timeout=30, clear_reactions_after=True)
         self.maze = maize_array()
         self.tries = 3
@@ -151,7 +156,9 @@ class MaizeGame(menus.Menu):
             self.add_button(b)
 
     def format_description(self, title="A game of Maize Maze has begun!", footer=None, preserve_instructions=True, preserve_maze=True):
-        """Formats the embed description properly."""
+        """
+        Formats the embed description properly.
+        """
 
         m = f"**{title}** "
         if preserve_instructions:
@@ -164,14 +171,20 @@ class MaizeGame(menus.Menu):
         return m
 
     async def send_initial_message(self, ctx, channel):
-        """Sends the message that becomes the host for a maize maze game"""
+        """
+        Sends the message that becomes the host for a maize maze game
+        """
+
         mazebed = discord.Embed(title="Maize maze!", description=self.format_description(), color=16202876)
         mazebed.set_author(name=self.ctx.author.name, icon_url=self.ctx.author.avatar_url)
         return await ctx.send(embed=mazebed)
 
     @menus.button("\N{BLACK SQUARE FOR STOP}\ufe0f")
     async def on_stop(self, _):
-        """Stops the game."""
+        """
+        Stops the game.
+        """
+
         mazetext = self.format_description("Botto is dead and you are entirely responsible.", "Know this. Feel guilt. It was your unwilling that killed him.", False, False)
         mazebed = discord.Embed(title="Maize maze!", description=mazetext, color=16202876)
         mazebed.set_author(name=self.ctx.author.name, icon_url=self.ctx.author.avatar_url)
@@ -181,7 +194,10 @@ class MaizeGame(menus.Menu):
         del self
 
     async def process_total_movements(self):
-        """Makes sure the maize gods aren't too far behind."""
+        """
+        Makes sure the maize gods aren't too far behind.
+        """
+
         self.movements += 1
 
         if self.movements > 20:
@@ -199,7 +215,10 @@ class MaizeGame(menus.Menu):
         return True
 
     async def process_direction(self, direction):
-        """Processes where botto goes."""
+        """
+        Processes where botto goes.
+        """
+
         botto_x, botto_y = self.maze.botto_pos()
         offset = OFFSET_MAPPING[direction]
         tile = self.maze.get_point(botto_x + offset[0], botto_y + offset[1]) or "⬛"
@@ -253,7 +272,6 @@ class MaizeGame(menus.Menu):
                 await self.message.edit(embed=mazebed)
                 self.stop()
                 del self
-
             elif "end" in str(tile):
                 await asyncio.sleep(2)
 
@@ -268,7 +286,6 @@ class MaizeGame(menus.Menu):
                 await self.message.edit(embed=mazebed)
                 self.stop()
                 del self
-
             elif "⬛" not in str(tile):
                 await self.message.edit(content=(
                     "Congratulations, you found the unfindable embed!"
@@ -276,7 +293,10 @@ class MaizeGame(menus.Menu):
                 )
 
     async def abstract_process_direction(self, payload):
-        """An abstract function that is fed to a button for processing movement."""
+        """
+        An abstract function that is fed to a button for processing movement.
+        """
+
         if await self.process_total_movements():
             await self.process_direction(EMOJI_DIRECTION_MAPPING[payload.emoji.name])
         else:
@@ -293,7 +313,9 @@ class BottoGames(commands.Cog, name="Botto Games"):
     @commands.max_concurrency(1, commands.BucketType.channel)
     @commands.cooldown(4, 60, commands.BucketType.user)
     async def maizemaze(self, ctx):
-        """Help Botto navigate through a treacherous maze of corn and horror."""
+        """
+        Help Botto navigate through a treacherous maze of corn and horror.
+        """
 
         await MaizeGame().start(ctx)
 

@@ -112,7 +112,9 @@ class Currency(commands.Cog, name="Currency & Items"):
 
     @commands.command(aliases=["$"])
     async def balance(self, ctx, *, who: discord.Member = None):
-        """Display the balance of you or another user."""
+        """
+        Display the balance of you or another user.
+        """
 
         # get user, amount and then build embed
         who = who or ctx.author
@@ -136,10 +138,12 @@ class Currency(commands.Cog, name="Currency & Items"):
 
     @commands.command()
     async def daily(self, ctx, *, disposition: str):
-        """Choose between the forces of light and dark for a chance to earn an extremely high amount of currency.
+        """
+        Choose between the forces of light and dark for a chance to earn an extremely high amount of currency.
         Three Fates will be chosen randomly, and if they match the disposition you choose, you will earn a large amount more money.
         Certain combinations of fates will also yield bonus currency.
-        Ultimately, the Fates are up to chance. Embrace them."""
+        Ultimately, the Fates are up to chance. Embrace them.
+        """
 
         if not disposition.lower() in VALID_DISPOSITION_MAPPING:
             raise commands.BadArgument
@@ -190,7 +194,9 @@ class Currency(commands.Cog, name="Currency & Items"):
 
     @commands.group(invoke_without_command=True, ignore_extra=False)
     async def inventory(self, ctx):
-        """Displays your inventory."""
+        """
+        Displays your inventory.
+        """
 
         # fetch items; if they don't have any, don't bother
         results = await self.db["inventory"].find(user_id=ctx.author.id)
@@ -225,7 +231,9 @@ class Currency(commands.Cog, name="Currency & Items"):
 
     @inventory.command(name="list")
     async def inventory_list(self, ctx):
-        """Displays your inventory in a list without extra information."""
+        """
+        Displays your inventory in a list without extra information.
+        """
 
         # fetch items; if they don't have any, don't bother
         results = await self.db["inventory"].find(user_id=ctx.author.id)
@@ -246,7 +254,9 @@ class Currency(commands.Cog, name="Currency & Items"):
     @commands.command(aliases=["forage"])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def gather(self, ctx):
-        """Go in search of valuables."""
+        """
+        Go in search of valuables.
+        """
 
         await ctx.cogs["Database"].game_advance_time(ctx.author.id, 20)
         current_time = (await ctx.db["game_time"].find_one(user_id=ctx.author.id))["minutes"]
@@ -349,7 +359,9 @@ class Currency(commands.Cog, name="Currency & Items"):
     @commands.command(aliases=["nap", "rest"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def sleep(self, ctx):
-        """Rest through the horrors of the night."""
+        """
+        Rest through the horrors of the night.
+        """
 
         results = await ctx.db["game_time"].find_one(user_id=ctx.author.id)
         if results:
@@ -380,7 +392,9 @@ class Currency(commands.Cog, name="Currency & Items"):
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def craft(self, ctx, *, item):
-        """Use your materials to build something new."""
+        """
+        Use your materials to build something new.
+        """
 
         to_craft = ITEM_MAPPING.get(item.lower(), {}).get("crafting", {})
         if not to_craft:
@@ -449,7 +463,9 @@ class Currency(commands.Cog, name="Currency & Items"):
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def craftable(self, ctx):
-        """What can you craft with your current tools?"""
+        """
+        What can you craft with your current tools?
+        """
 
         # get inventory so that we know what we can make
         inventory_names = [item["name"] for item in await self.db["inventory"].find(user_id=ctx.author.id)]

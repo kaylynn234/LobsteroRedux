@@ -84,22 +84,26 @@ class BanConglomerate():
         return img
 
 
-class Cog(commands.Cog, name="Editing"):
-    """Edit images. Almost all commands in this module will take an ``Image`` parameter.
+class Editing(commands.Cog):
+    """
+    Edit images. Almost all commands in this module will take an ``Image`` parameter.
 
-You can either:
-- attach the image to the message you send the command in
-- @mention a user to use their profile picture
-- use a custom emoji
-- or pass it using a URL when using the command
-If you don't do any of that, Lobstero will search the previous few messages for an image."""
+    You can either:
+    - attach the image to the message you send the command in
+    - @mention a user to use their profile picture
+    - use a custom emoji
+    - or pass it using a URL when using the command
+    If you don't do any of that, Lobstero will search the previous few messages for an image.
+    """
 
     def __init__(self, bot):
         self.bot = bot
         self.session = bot.session
 
     async def wrap(self, func, *args, **kwargs):
-        """Wraps a sync function into a threadpool'd asynchronous executor."""
+        """
+        Wraps a sync function into a threadpool'd asynchronous executor.
+        """
 
         new_func = functools.partial(func, *args, **kwargs)
         output = await self.bot.loop.run_in_executor(None, new_func)
@@ -121,7 +125,9 @@ If you don't do any of that, Lobstero will search the previous few messages for 
         return [[item, True] for item in current]
 
     async def package(self, file_loc, download=True):
-        """Packages a local or downloaded file into an object."""
+        """
+        Packages a local or downloaded file into an object.
+        """
 
         try:
             file_name = urlsplit(file_loc)[2].split('/')[-1]
@@ -683,7 +689,9 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
     @commands.command()
     async def shitpost(self, ctx, *, url=None):
-        """It's humour from the future!"""
+        """
+        It's humour from the future!
+        """
 
         result = await self.process_file(ctx, url)
         if result is None:
@@ -696,7 +704,9 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
     @commands.command()
     async def audioimage(self, ctx, *, url=None):
-        """Turn an image into audio."""
+        """
+        Turn an image into audio.
+        """
 
         result = await self.process_file(ctx, url)
         if result is None:
@@ -724,7 +734,9 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
     @commands.command()
     async def wheelofban(self, ctx):
-        """Spin the wheel of ban!"""
+        """
+        Spin the wheel of ban!
+        """
 
         banhandler = BanConglomerate()
         wheel = Image.open(f"{ROOT_DIRECTORY}extensions/data/wheel_of_ban.png")
@@ -754,8 +766,10 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
     @commands.command()
     async def imagescript(self, ctx, *, url_and_code):
-        """Runs code for Lobstero's Imagescript scripting language.
-        At the moment, this is very poorly documented and still a WIP. It will be expanded upon later."""
+        """
+        Runs code for Lobstero's Imagescript scripting language.
+        At the moment, this is very poorly documented and still a WIP. It will be expanded upon later.
+        """
 
         url = None
         code = url_and_code
@@ -792,7 +806,10 @@ If you don't do any of that, Lobstero will search the previous few messages for 
     # This is an abstract function intended to be passed to a specifically configured Command
     # It is used to efficiently wrap around process_single for many commands
     async def abstract_process_single(self, ctx, *, url=None):
-        """You shouldn't see this!"""
+        """
+        You shouldn't see this!
+        """
+
         await self.process_single(ctx.command.name, ctx, url)
 
     # Create the commands from the abstraction and add relevant information
@@ -805,4 +822,4 @@ If you don't do any of that, Lobstero will search the previous few messages for 
 
 
 def setup(bot: commands.Bot):
-    bot.add_cog(Cog(bot))
+    bot.add_cog(Editing(bot))

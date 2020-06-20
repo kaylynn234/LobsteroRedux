@@ -3,6 +3,7 @@ import difflib
 import logging
 import traceback
 import re
+import inspect
 
 from collections import defaultdict
 from typing import Sequence, Iterator, Optional, KeysView, MutableMapping
@@ -96,7 +97,7 @@ class CustomHelpCommand(commands.HelpCommand):
         embed = discord.Embed(title="Help", color=16202876)
         description = [
             f"```{cog.qualified_name}```",
-            f"{cog.description}\n",
+            f"{inspect.cleandoc(cog.description)}\n",
             f"```Commands ({len(results)} available)``` ",
             f"``{', '.join([command.name for command in results])}``"
         ]
@@ -123,7 +124,7 @@ class CustomHelpCommand(commands.HelpCommand):
             f"{self.context.prefix}{command.qualified_name} {command.signature}",
             "<*arg*> represents a required argument. [*arg*] represents an optional argument.",
             "**Do not actually use these brackets when using commands!**\n",
-            f"{command.help or '*(No detailed help provided)*'}"
+            f"{inspect.cleandoc(command.help) if command.help else '*(No detailed help provided)*'}"
         ]
 
         if isinstance(command, commands.Group):

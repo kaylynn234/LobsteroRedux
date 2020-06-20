@@ -79,7 +79,9 @@ class Fun(commands.Cog):
     @commands.cooldown(2, 30, commands.BucketType.user)
     @commands.command()
     async def cat(self, ctx):
-        """Shows you a bunch of cats."""
+        """
+        Shows you a bunch of cats.
+        """
 
         url = "https://api.thecatapi.com/v1/images/search?limit=5"
         headers = {"x-api-key": self.bot.config["external"]["cat_api_key"]}
@@ -106,7 +108,9 @@ class Fun(commands.Cog):
     @commands.cooldown(2, 30, commands.BucketType.user)
     @commands.command()
     async def dog(self, ctx):
-        """Shows you a bunch of dogs."""
+        """
+        Shows you a bunch of dogs.
+        """
 
         url = "https://dog.ceo/api/breeds/image/random/5"
         async with self.session.get(url) as resp:
@@ -130,7 +134,9 @@ class Fun(commands.Cog):
 
     @commands.command()
     async def gnome(self, ctx, *people: discord.Member):
-        """Gnome your chums!"""
+        """
+        Gnome your chums!
+        """
 
         people = tuple(person for person in people if person.id != ctx.author.id)
         if not people:
@@ -166,7 +172,9 @@ class Fun(commands.Cog):
 
     @commands.command()
     async def cursedcat(self, ctx, number: int = None):
-        """Sends you a cursed cat image. Most of these donated by the user luggi."""
+        """
+        Sends you a cursed cat image. Most of these donated by the user luggi.
+        """
 
         results = await self.lobstero_api_request(ctx, number, "cursedcats")
         results["embed"].title = f"Cursed cat #{results['response']['index']}"
@@ -174,7 +182,9 @@ class Fun(commands.Cog):
 
     @commands.command()
     async def conglomerate(self, ctx):
-        """Randomized text madness."""
+        """
+        Randomized text madness.
+        """
 
         words = filter(None, [message.clean_content async for message in ctx.channel.history(limit=250)])
         sentence = " ".join(random.choice(list(words)) for _ in range(random.randint(6, 18)))
@@ -182,7 +192,9 @@ class Fun(commands.Cog):
 
     @commands.command(name="88x31", aliases=["31x88"])
     async def eightyeightxthreeone(self, ctx):
-        """Grabs a random 88x31 button from https://cyber.dabamos.de/88x31/."""
+        """
+        Grabs a random 88x31 button from https://cyber.dabamos.de/88x31/.
+        """
 
         async with self.bot.session.get("https://cyber.dabamos.de/88x31/") as resp:
             data = await resp.text()
@@ -197,7 +209,9 @@ class Fun(commands.Cog):
 
     @commands.command()
     async def inspire(self, ctx):
-        """Sends you a few "inspiring" quotes."""
+        """
+        Sends you a few "inspiring" quotes.
+        """
 
         images = []
         for i in range(4):
@@ -233,7 +247,9 @@ class Fun(commands.Cog):
     @commands.group(invoke_without_command=True, ignore_extra=False)
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def hug(self, ctx, *people: discord.User):
-        """Hug your friends!"""
+        """
+        Hug your friends!
+        """
 
         people = tuple(person for person in people if person.id != ctx.author.id)
         if not people:
@@ -278,7 +294,9 @@ class Fun(commands.Cog):
 
     @hug.command(name="progress", aliases=["stats"])
     async def hug_progress(self, ctx):
-        """Check how close you are to a new hug badge, or see the badges you already have."""
+        """
+        Check how close you are to a new hug badge, or see the badges you already have.
+        """
 
         # get some hug stats
         hug_results = await self.db["action_counts"].find_one(user_id=ctx.author.id, action="hug")

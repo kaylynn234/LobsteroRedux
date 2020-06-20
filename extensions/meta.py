@@ -18,9 +18,11 @@ class Meta(commands.Cog):
     async def before_ready(self):
         self.db = self.bot.db  # type: bigbeans.databean.Databean
 
-    @commands.command()
+    @commands.command(aliases=["invite", "about"])
     async def info(self, ctx):
-        "Displays various bits of information about the bot."
+        """
+        Displays various bits of information about the bot.
+        """
 
         embed = discord.Embed(title="Bot information", color=16202876)
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
@@ -52,9 +54,11 @@ class Meta(commands.Cog):
     @commands.guild_only()
     @commands.group(invoke_without_command=True, ignore_extra=False)
     async def lock(self, ctx):
-        """A base command for all lock-related subcommands.
+        """
+        A base command for all lock-related subcommands.
         If no subcommand is used, displays a list of locked channels.
-        Regardless of this server's locked channels, these commands can always be used."""
+        Regardless of this server's locked channels, these commands can always be used.
+        """
 
         results = await self.db["channel_locks"].find(guild_id=ctx.guild.id)
         if not results:
@@ -74,9 +78,11 @@ class Meta(commands.Cog):
     @commands.has_permissions(administrator=True)
     @lock.command(name="add")
     async def lock_add(self, ctx, *, channel: discord.TextChannel = None):
-        """Adds this channel to the list of locked channels.
+        """
+        Adds this channel to the list of locked channels.
         If any locked channels are set, the bot will be unable to be used in any non-locked channels.
-        Note that regardless of this server's locked channels, these commands can always be used."""
+        Note that regardless of this server's locked channels, these commands can always be used.
+        """
 
         channel = channel or ctx.channel
         await self.db["channel_locks"].upsert(["guild_id", "channel_id"], guild_id=ctx.guild.id, channel_id=channel.id)
@@ -86,9 +92,11 @@ class Meta(commands.Cog):
     @commands.has_permissions(administrator=True)
     @lock.command(name="remove")
     async def lock_remove(self, ctx, *, channel: discord.TextChannel = None):
-        """Removes this channel from the list of locked channels.
+        """
+        Removes this channel from the list of locked channels.
         If any locked channels are set, the bot will be unable to be used in any non-locked channels.
-        Note that regardless of this server's locked channels, these commands can always be used."""
+        Note that regardless of this server's locked channels, these commands can always be used.
+        """
 
         channel = channel or ctx.channel
         await self.db["channel_locks"].delete(guild_id=ctx.guild.id, channel_id=channel.id)

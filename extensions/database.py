@@ -46,7 +46,9 @@ class Database(commands.Cog):
     # last_accessed: tz-aware pendulum timestamp as text, this is the date that the cooldown was last triggered
 
     async def cooldown_query(self, unique_id: int, cooldown_group: str, duration: pendulum.Duration) -> Union[bool, pendulum.Period]:
-        """Return False if unique_id is not on cooldown, or time remaining if it is."""
+        """
+        Return False if unique_id is not on cooldown, or time remaining if it is.
+        """
 
         result = await self.db["extended_cooldown"].find_one(unique_id=unique_id, cooldown_group=cooldown_group)
         if not result:
@@ -61,7 +63,9 @@ class Database(commands.Cog):
                 return last_accessed + duration
 
     async def cooldown_set(self, unique_id: int, cooldown_group: str) -> None:
-        """Sets a cooldown for unique_id in the specified group."""
+        """
+        Sets a cooldown for unique_id in the specified group.
+        """
 
         now = str(pendulum.now())
         await self.db["extended_cooldown"].upsert(
