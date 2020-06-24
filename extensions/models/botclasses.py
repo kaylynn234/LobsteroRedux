@@ -317,7 +317,9 @@ class Lobstero(commands.AutoShardedBot):
             return
 
         # speak if spoken to, but only if a command isn't used
-        if (f"<@{self.user.id}>" in message.content or f"<@!{self.user.id}>" in message.content) and not ctx.command:
+        bot_mentioned = (f"<@{self.user.id}>" in message.content or f"<@!{self.user.id}>" in message.content)
+        in_crabversation = "crabversation" in ctx.channel.name.lower() if ctx.guild else False
+        if (bot_mentioned or in_crabversation) and not ctx.command:
             try:
                 await message.channel.send(await self.markov(ctx))
             except discord.Forbidden:
