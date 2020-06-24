@@ -97,7 +97,7 @@ class CustomHelpCommand(commands.HelpCommand):
         embed = discord.Embed(title="Help", color=16202876)
         description = [
             f"```{cog.qualified_name}```",
-            f"{inspect.cleandoc(cog.description)}\n",
+            f"{inspect.cleandoc(cog.description) if cog.description else '(No details)'}\n",
             f"```Commands ({len(results)} available)``` ",
             f"``{', '.join([command.name for command in results])}``"
         ]
