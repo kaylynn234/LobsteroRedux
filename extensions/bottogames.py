@@ -185,7 +185,13 @@ class MaizeGame(menus.Menu):
         Stops the game.
         """
 
-        mazetext = self.format_description("Botto is dead and you are entirely responsible.", "Know this. Feel guilt. It was your unwilling that killed him.", False, False)
+        mazetext = self.format_description(
+            "Botto is dead and you are entirely responsible.",
+            "Know this. Feel guilt. It was your unwilling that killed him.",
+            False,
+            False
+        )
+
         mazebed = discord.Embed(title="Maize maze!", description=mazetext, color=16202876)
         mazebed.set_author(name=self.ctx.author.name, icon_url=self.ctx.author.avatar_url)
         await self.message.edit(embed=mazebed)

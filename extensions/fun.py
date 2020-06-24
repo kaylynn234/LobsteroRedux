@@ -342,4 +342,6 @@ class Fun(commands.Cog):
 def setup(bot):
     fun_cog = Fun(bot)
     fun_cog.cat.enabled = bot.config["external"]["use_cat_api"]  # disable command if not using API
+    fun_cog.cursedcat.enabled = bot.config["external"]["use_lobstero_api"]  # see above
+    fun_cog.gnome.enabled = bot.config["external"]["use_lobstero_api"]  # ...
     bot.add_cog(fun_cog)

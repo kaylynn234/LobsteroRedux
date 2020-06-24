@@ -9,7 +9,7 @@ from jishaku.meta import __version__
 from jishaku.metacog import GroupCogMeta
 from jishaku.modules import ExtensionConverter, package_version
 from jishaku.paginators import WrappedPaginator
-from jishaku.cog_base import JISHAKU_HIDE, JishakuBase
+from jishaku.cog_base import JishakuBase
 from discord.ext import commands
 
 
@@ -20,7 +20,7 @@ except ImportError:
 
 
 @commands.is_owner()
-@commands.group(name="jishaku", aliases=["admin"], hidden=JISHAKU_HIDE, invoke_without_command=True, ignore_extra=False)
+@commands.group(name="jishaku", aliases=["admin"], invoke_without_command=True, ignore_extra=False)
 async def admin(self, ctx: commands.Context):
     """A suite of owner/ admin commands powered by jsk behind the scenes."""
 
