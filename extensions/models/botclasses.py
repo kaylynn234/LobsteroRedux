@@ -268,6 +268,7 @@ class Lobstero(commands.AutoShardedBot):
             )
         except Exception as error:
             self.logger.critical("Connection to database failed: %s", str(error))
+            exit()
         else:
             self.logger.info("Connection to database established.")
 
