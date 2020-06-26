@@ -3,6 +3,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 
 import pendulum
+import discord
 import click
 import toml
 import markovify
@@ -80,7 +81,8 @@ def run(**kwargs):
     else:
         bot._markov_model = None
 
-    bot.run(token)
+    mentions = discord.AllowedMentions(everyone=False, users=False, roles=False)
+    bot.run(token, allowed_mentions=mentions)
 
 
 run()

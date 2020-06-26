@@ -272,6 +272,7 @@ class Lobstero(commands.AutoShardedBot):
         else:
             self.logger.info("Connection to database established.")
 
+        # iterate through our cogs, if any have a before_ready function, call it
         for cog in self.cogs.values():
             func = getattr(cog, "before_ready", None)
             if func:
