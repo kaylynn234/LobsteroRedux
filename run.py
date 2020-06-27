@@ -81,8 +81,8 @@ def run(**kwargs):
     else:
         bot._markov_model = None
 
-    mentions = discord.AllowedMentions(everyone=False, users=False, roles=False)
-    bot.run(token, allowed_mentions=mentions)
+    bot.allowed_mentions = discord.AllowedMentions(everyone=False, users=False, roles=False)
+    bot.run(token)
 
 
 run()
