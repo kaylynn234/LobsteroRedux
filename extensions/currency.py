@@ -1,5 +1,6 @@
 import collections
 
+import asyncio
 import random
 
 from collections import defaultdict
@@ -68,6 +69,29 @@ DAYLIGHT_STEPS = collections.deque([
     "☀️", "☀️", "☀️", "☀️", "☀️", "☀️",
     "☀️", "🌑", "🌑", "🌑", "🌑", "🌑"
 ])
+
+MOON_WHEELS = collections.deque([
+    "🌑",
+    "🌒",
+    "🌓",
+    "🌔",
+    "🌕",
+    "🌖",
+    "🌗",
+    "🌘"
+])
+
+MOON_WHEEL_INFO = {
+    "🌑": {"message": "Cold, eerie darkness.", "amount": 5},
+    "🌒": {"message": "A hint of warmth.", "amount": 20},
+    "🌓": {"message": "Hope amidst the night.", "amount": 45},
+    "🌔": {"message": "An uneasy light.", "amount": 65},
+    "🌕": {"message": "Blinding light.", "amount": 120},
+    "🌖": {"message": "Comfort with a hint of despair.", "amount": 65},
+    "🌗": {"message": "A cool breeze laden with secrets.", "amount": 45},
+    "🌘": {"message": "Worry plagues the mind.", "amount": 30}
+}
+
 
 with open("extensions/items.toml") as tomlfile:
     item_data = toml.load(tomlfile)
@@ -492,6 +516,63 @@ class Currency(commands.Cog, name="Currency & Items"):
         # start menu with built data
         menu = menus.MenuPages(pages, timeout=90)
         await menu.start(ctx)
+
+    def _generate_spinny_wheel(self, seq):
+        """
+        Generates a spinny wheel
+        """
+
+        result_string = (
+            f"🎰⬇️🎰\n"
+            f"{seq[7]}{seq[0]}{seq[1]}\n"
+            f"{seq[6]}⚙️{seq[2]}\n"
+            f"{seq[5]}{seq[4]}{seq[3]}\n"
+        )
+
+        return result_string
+
+    @commands.command()
+    @commands.cooldown(1, 300, commands.BucketType.user)
+    async def spin(self, ctx):
+        """
+        Spin the Moonlit Wheel in search of wealth!
+        """
+
+        # check if they have enough to spin
+        currency = await self.db["currency"].find_one(user_id=ctx.author.id)
+        amount_owned = currency["amount"] if currency else 0
+
+        if amount_owned < 50:
+            return await ctx.send(f"You need at least **50** {COIN} to do this! You have **{amount_owned}** {COIN}")
+
+        # take money away in advance
+        await self.add_currency(ctx.author.id, -50)
+
+        wheel = MOON_WHEELS.copy()
+        wheel.rotate(random.randint(0, 8))  # these numbers bear no significance whatsoever
+
+        # prepare embed and send the first message
+        embed = discord.Embed(title="You hope for the best and spin...", color=16202876)
+        embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
+        embed.description = self._generate_spinny_wheel(wheel)
+        message = await ctx.send(embed=embed)
+
+        for i in [2, 2, 2, 1]:
+            await asyncio.sleep(.75)
+            wheel.rotate(-i)
+            embed.description = self._generate_spinny_wheel(wheel)
+            if i == 1:  # last step
+                field_message = (
+                    f"{wheel[0]} - *{MOON_WHEEL_INFO[wheel[0]]['message']}*\n"
+                    f"You earned **{MOON_WHEEL_INFO[wheel[0]]['amount']}** {COIN}"
+                )
+
+                embed.add_field(name="Outcome", value=field_message)
+
+            await message.edit(embed=embed)
+
+        # finally, give them the money
+        await self.add_currency(ctx.author.id, MOON_WHEEL_INFO[wheel[0]]["amount"])
 
 
 def setup(bot):
