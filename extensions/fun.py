@@ -338,6 +338,23 @@ class Fun(commands.Cog):
 
         await ctx.send(embed=embed)
 
+    @commands.command()
+    async def garfield(self, ctx):
+        """
+        Generates a random garfield comic using https://www.bgreco.net/garfield/.
+        """
+
+        async with self.bot.session.get("https://www.bgreco.net/garfield/") as resp:
+            data = await resp.text()
+
+        # get a save url & build embed, then send
+        found = re.findall("save.png?(.*)&", data)
+        embed = discord.Embed(title="Garfield", color=16202876)
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        embed.set_image(url=f"https://www.bgreco.net/garfield/save.png{found[0]}")
+
+        await ctx.send(embed=embed)
+
 
 def setup(bot):
     fun_cog = Fun(bot)
