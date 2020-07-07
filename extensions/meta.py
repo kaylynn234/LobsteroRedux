@@ -38,7 +38,7 @@ class Meta(commands.Cog):
             pass
 
         # this is ugly; i'm not sure if i care
-        embed.add_field(name="Developer", value="Kaylynn#444")
+        embed.add_field(name="Developer", value="Kaylynn#0001")
         embed.add_field(name="Uptime", value=self.bot._start_time.diff_for_humans(absolute=True))
         embed.add_field(name="Latency", value=f"{self.bot.latency * 1000:.2f} ms")
         embed.add_field(name="Github", value="[kaylynn234/LobsteroRedux](https://github.com/kaylynn234/LobsteroRedux)")
