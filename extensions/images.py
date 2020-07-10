@@ -167,14 +167,7 @@ class Editing(commands.Cog):
         else:
             results.append([str(m.avatar_url_as(format="png", size=2048)), True])
 
-        # Don't bother with this for now
-        # 2: Try emoji lookup
-        # em = list(chain(*strings.split_count(str(url))))  # for unicode emoji
-        # if em:
-        #     escape = "-".join([f"{ord(e):X}" for e in em]).lower()
-        #     results.append([f"{ROOT_DIRECTORY}data/static/emojis/{escape}.png", False])
-
-        # 2.5: Try custom emoji lookup
+        # 2: Try custom emoji lookup
         c = commands.PartialEmojiConverter()
         try:
             e = await c.convert(ctx, str(url))
@@ -186,23 +179,7 @@ class Editing(commands.Cog):
         # 3: Try message attachments
         results.extend(self.iter_attachments(ctx.message.attachments))
 
-        # 4: Try as just a URL
-        valid = [".jpeg", ".jpg", ".png", ".webp", "gif"]
-        if True in [str(url).lower().endswith(v) for v in valid]:
-            results.append([str(url), True])
-
-        # 5 & 6: Try looking through embeds and attachments in previous messages
-        try:
-            messages = await ctx.history(limit=15).flatten()
-        except discord.DiscordException:
-            messages = []
-
-        for message in messages:
-            embed_images = filter(None, [embed.image for embed in message.embeds])
-            results.extend(self.iter_attachments(embed_images))
-            results.extend(self.iter_attachments(message.attachments))
-
-        # 7: Give up
+        # 4: Give up
         results.append([str(ctx.author.avatar_url_as(static_format="png", size=2048)), True])
 
         # Last step: Attempt to find one that works and return
