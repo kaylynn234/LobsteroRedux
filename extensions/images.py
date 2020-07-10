@@ -92,8 +92,6 @@ class Editing(commands.Cog):
     - attach the image to the message you send the command in
     - @mention a user to use their profile picture
     - use a custom emoji
-    - or pass it using a URL when using the command
-    If you don't do any of that, Lobstero will search the previous few messages for an image.
     """
 
     def __init__(self, bot):
