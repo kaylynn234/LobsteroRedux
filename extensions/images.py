@@ -672,7 +672,7 @@ class Editing(commands.Cog):
         if result is None:
             return
 
-        markov = await self.bot.markov()
+        markov = await self.bot.markov(ctx)
         meme = self.make_meme(markov, markov, result.data)
 
         await self.save_and_send(ctx, meme, "shitpost.png")
