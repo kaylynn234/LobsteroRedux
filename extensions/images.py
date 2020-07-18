@@ -91,7 +91,7 @@ class Editing(commands.Cog):
     You can either:
     - attach the image to the message you send the command in
     - @mention a user to use their profile picture
-    - use a custom emoji
+    - use a custom emoji    
     """
 
     def __init__(self, bot):
@@ -672,7 +672,7 @@ class Editing(commands.Cog):
         if result is None:
             return
 
-        markov = await self.bot.markov_generator.generate()
+        markov = await self.bot.markov()
         meme = self.make_meme(markov, markov, result.data)
 
         await self.save_and_send(ctx, meme, "shitpost.png")
